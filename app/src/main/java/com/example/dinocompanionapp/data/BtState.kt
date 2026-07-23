@@ -1,4 +1,4 @@
-package com.example.dinocompanionapp
+package com.example.dinocompanionapp.data
 
 
 enum class BtState {
