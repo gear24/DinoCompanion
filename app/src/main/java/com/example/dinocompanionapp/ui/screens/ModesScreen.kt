@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -16,12 +17,14 @@ import com.example.dinocompanionapp.ui.components.DinoButton
 import com.example.dinocompanionapp.ui.components.DinoCard
 import com.example.dinocompanionapp.ui.theme.*
 import com.example.dinocompanionapp.viewmodel.DinoViewModel
+import androidx.compose.ui.graphics.Color
+import com.example.dinocompanionapp.ui.components.DinoSlider
 
 @Composable
 fun ModesScreen(
     animState: Boolean,       // Indica si hay alguna animación corriendo
-    speed: Float,             // Velocidad actual del slider (ej. 1f..100f)
-    onSpeedChanged: (Float) -> Unit,
+    brightness: Float,             // Velocidad actual del slider (ej. 1f..100f)
+    onBrightnessChanged: (Float) -> Unit,
     onStartLava: () -> Unit,
     onStartArcoiris: () -> Unit,
     onStartRespirar: () -> Unit,
@@ -54,18 +57,21 @@ fun ModesScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        Text("Velocidad de Efecto: ${speed.toInt()}")
+        Text("Velocidad de Efecto: ${brightness.toInt()}")
 
-        Slider(
-            value = speed,
-            onValueChange = onSpeedChanged,
+
+        DinoSlider(
+            label = "Brillo",
+            value = brightness,
+            onValueChange = onBrightnessChanged,
             valueRange = 1f..100f,
-            colors = SliderDefaults.colors(
-                thumbColor = Dark,
-                activeTrackColor = Cream,
-                inactiveTrackColor = SoftPink
-            )
+            activeTrackColor = Color(0xFFFFD54F),        // ☀️ Ámbar cálido (símbolo de luz encendida)
+            inactiveTrackColor = SoftPink.copy(alpha = 0.4f), // Pista inactiva suave con la paleta de tu app
+            thumbColor = Cream,                          // BotónCrema para mantener tu identidad visual
+            labelColor = Cream,
+            valueFormatter = { "${it.toInt()}%" }
         )
+
 
         Spacer(Modifier.height(24.dp))
 
@@ -98,6 +104,14 @@ fun ModesScreen(
         DinoButton("💨 Efecto Respirar") {
             onStartRespirar()
         }
+
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = "💡 Sugerencia: En el modo Respirar, asegúrate de tener el brillo en la app mayor al 20% para evitar que los LEDs se apaguen por completo en el ciclo bajo.",
+            color = Color(0xFFFFB74D), // Naranja suave
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
 
         Spacer(Modifier.height(12.dp))
 

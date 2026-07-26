@@ -103,8 +103,8 @@ class MainActivity : ComponentActivity() {
                         "modes" -> {
                             ModesScreen(
                                 animState = dinoViewModel.animState,
-                                speed = dinoViewModel.speed,
-                                onSpeedChanged = { nSpeed -> dinoViewModel.updateSpeed(nSpeed) },
+                                brightness = dinoViewModel.brightness,
+                                onBrightnessChanged = { nBrightness -> dinoViewModel.updateBrightness(nBrightness) },
                                 onStartLava = { dinoViewModel.startLava() },
                                 onStartArcoiris = { dinoViewModel.startArcoiris() },
                                 onStartRespirar = { dinoViewModel.startRespirar() },

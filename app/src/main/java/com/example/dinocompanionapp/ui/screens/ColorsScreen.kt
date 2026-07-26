@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.example.dinocompanionapp.ui.components.ColorPicker
 import com.example.dinocompanionapp.ui.components.DinoButton
 import com.example.dinocompanionapp.ui.components.DinoCard
+import com.example.dinocompanionapp.ui.components.DinoSlider
 import com.example.dinocompanionapp.ui.theme.*
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -62,15 +63,16 @@ fun ColorsScreen(
 
         Text("Brillo: ${brillo.toInt()}")
 
-        Slider(
+        DinoSlider(
+            label = "Brillo General",
             value = brillo,
             onValueChange = onBrilloChanged,
             valueRange = 0f..100f,
-            colors = SliderDefaults.colors(
-                thumbColor = Dark,
-                activeTrackColor = Cream,
-                inactiveTrackColor = SoftPink
-            )
+            activeTrackColor = Color(0xFFFFD54F),        // ☀️ Ámbar cálido para representar intensidad de luz
+            inactiveTrackColor = SoftPink.copy(alpha = 0.4f), // Tu fondo rosa suave integrado
+            thumbColor = Cream,                          // Botón crema característico de tu UI
+            labelColor = Cream,
+            valueFormatter = { "${it.toInt()}%" }
         )
 
         Spacer(Modifier.height(12.dp))

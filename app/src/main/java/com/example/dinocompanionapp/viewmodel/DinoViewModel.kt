@@ -77,7 +77,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     var animState by mutableStateOf(modoActual != 0)
         private set
 
-    var speed by mutableStateOf(
+    var brightness by mutableStateOf(
         prefs.getFloat("brillo_modos", 60f)
     )
 
@@ -254,8 +254,8 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- ACCIONES DE MODOS (MODESSCREEN) ---
-    fun updateSpeed(nuevoBrilloModo: Float) {
-        speed = nuevoBrilloModo
+    fun updateBrightness(nuevoBrilloModo: Float) {
+        brightness = nuevoBrilloModo
         prefs.edit().putFloat("brillo_modos", nuevoBrilloModo).apply()
         sendBrightness(nuevoBrilloModo.toInt())
     }
@@ -294,7 +294,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             bluetoothManager.send(idModo.toString())
-            bluetoothManager.send("${DinoProtocol.BRIGHTNESS}|${speed.toInt()}")
+            bluetoothManager.send("${DinoProtocol.BRIGHTNESS}|${brightness.toInt()}")
         }
     }
     fun reactivarUltimoModo() {

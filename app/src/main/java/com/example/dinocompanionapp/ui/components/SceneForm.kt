@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -200,13 +201,23 @@ fun SceneForm(
 
         // --- SLIDER DE BRILLO ---
         Text("Brillo: ${brilloEscena.toInt()}%", color = Cream)
-        Slider(
+
+        DinoSlider(
+            label = "Brillo",
             value = brilloEscena,
             onValueChange = {
                 brilloEscena = it
                 notificarCambiosLive()
             },
-            valueRange = 0f..100f
+            valueRange = 0f..100f,
+            activeTrackColor = Color(0xFFFFC107),  // 🌟 Ámbar/Dorado cálido para el brillo
+            inactiveTrackColor = Dark.copy(alpha = 0.2f), // Pista inactiva sutil
+            thumbColor = Cream,                    // Botón en tono crema
+            labelColor = Cream,
+            valueFormatter = { "${it.toInt()}%" },
+            warningMessage = if (efecto == EfectoEscena.RESPIRAR && brilloEscena < 20f) {
+                "En modo Respirar, un brillo menor al 20% puede apagar temporalmente los LEDs en el punto más bajo."
+            } else null
         )
 
         // --- SLIDER DE VELOCIDAD DINO ---
@@ -220,13 +231,24 @@ fun SceneForm(
             }
 
             Text("$etiquetaVelocidad: ${velocidadEscena.toInt()}%", color = Cream)
-            Slider(
+            DinoSlider(
+                label = when (efecto) {
+                    EfectoEscena.MEZCLA -> "Suavidad de mezcla"
+                    EfectoEscena.RESPIRAR -> "Frecuencia de respiración"
+                    EfectoEscena.PARPADEO -> "Velocidad de destello"
+                    else -> "Velocidad"
+                },
                 value = velocidadEscena,
                 onValueChange = {
                     velocidadEscena = it
                     notificarCambiosLive()
                 },
-                valueRange = 1f..100f
+                valueRange = 1f..100f,
+                activeTrackColor = Color(0xFF4DB6AC),  // 🌊 Verde turquesa / menta suave
+                inactiveTrackColor = Dark.copy(alpha = 0.2f),
+                thumbColor = Cream,
+                labelColor = Cream,
+                valueFormatter = { "${it.toInt()}%" }
             )
         }
 
