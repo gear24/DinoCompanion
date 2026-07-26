@@ -103,8 +103,8 @@ class MainActivity : ComponentActivity() {
                         "modes" -> {
                             ModesScreen(
                                 animState = dinoViewModel.animState,
-                                brightness = dinoViewModel.brightness,
-                                onBrightnessChanged = { nBrightness -> dinoViewModel.updateBrightness(nBrightness) },
+                                brightness = dinoViewModel.brillo, // 👈 Usa el brillo unificado
+                                onBrightnessChanged = { nuevoBrillo -> dinoViewModel.updateBrillo(nuevoBrillo) }, // 👈 Usa la función única
                                 onStartLava = { dinoViewModel.startLava() },
                                 onStartArcoiris = { dinoViewModel.startArcoiris() },
                                 onStartRespirar = { dinoViewModel.startRespirar() },

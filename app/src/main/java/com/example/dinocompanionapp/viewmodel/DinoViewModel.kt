@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,7 +56,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         private set
 
     // --- ESTADOS DE COLORSSCREEN ---
-    var brillo by mutableStateOf(prefs.getFloat("brillo", 80f))
+    var brillo by mutableFloatStateOf(prefs.getFloat("brillo", 80f))
         private set
 
     var currentColor by mutableStateOf(
@@ -77,9 +78,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     var animState by mutableStateOf(modoActual != 0)
         private set
 
-    var brightness by mutableStateOf(
-        prefs.getFloat("brillo_modos", 60f)
-    )
+
 
     // --- ESTADOS DE ESCENAS CREACIÓN / LISTA ---
     val listaEscenas = mutableStateListOf<Escena>()
@@ -158,6 +157,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
                     if (dinoEncendido) {
                         sendCurrentColor()
                         bluetoothManager.send("${DinoProtocol.BRIGHTNESS}|${brillo.toInt()}")
+
                     }
                 }
             }
@@ -254,11 +254,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- ACCIONES DE MODOS (MODESSCREEN) ---
-    fun updateBrightness(nuevoBrilloModo: Float) {
-        brightness = nuevoBrilloModo
-        prefs.edit().putFloat("brillo_modos", nuevoBrilloModo).apply()
-        sendBrightness(nuevoBrilloModo.toInt())
-    }
 
     fun startLava() {
         ejecutarModo(3)
@@ -283,18 +278,22 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun ejecutarModo(idModo: Int) {
         modoActual = idModo
-        ultimoModoId = idModo // 👈 Guardamos el último modo seleccionado
+        ultimoModoId = idModo
         dinoEncendido = true
         animState = true
+
+        val brilloInt = brillo.toInt().coerceIn(0, 100)
+
         prefs.edit()
             .putInt("modo_actual", idModo)
-            .putInt("ultimo_modo_id", idModo) // 👈 Lo guardamos en prefs
+            .putInt("ultimo_modo_id", idModo)
             .putBoolean("dino_encendido", true)
             .apply()
 
         viewModelScope.launch {
             bluetoothManager.send(idModo.toString())
-            bluetoothManager.send("${DinoProtocol.BRIGHTNESS}|${brightness.toInt()}")
+            kotlinx.coroutines.delay(30)
+            bluetoothManager.send("${DinoProtocol.BRIGHTNESS}|$brilloInt")
         }
     }
     fun reactivarUltimoModo() {

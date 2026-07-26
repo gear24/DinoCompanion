@@ -232,12 +232,7 @@ fun SceneForm(
 
             Text("$etiquetaVelocidad: ${velocidadEscena.toInt()}%", color = Cream)
             DinoSlider(
-                label = when (efecto) {
-                    EfectoEscena.MEZCLA -> "Suavidad de mezcla"
-                    EfectoEscena.RESPIRAR -> "Frecuencia de respiración"
-                    EfectoEscena.PARPADEO -> "Velocidad de destello"
-                    else -> "Velocidad"
-                },
+                label = "",
                 value = velocidadEscena,
                 onValueChange = {
                     velocidadEscena = it
