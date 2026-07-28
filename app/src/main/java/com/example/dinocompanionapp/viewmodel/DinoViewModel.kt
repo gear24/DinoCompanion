@@ -253,6 +253,8 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+
+
     // --- ACCIONES DE MODOS (MODESSCREEN) ---
 
     fun startLava() {
