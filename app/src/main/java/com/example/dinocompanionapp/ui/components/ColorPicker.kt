@@ -41,6 +41,12 @@ fun ColorPicker(
     var value by remember { mutableFloatStateOf(1f) }
     var isUserInteracting by remember { mutableStateOf(false) }
 
+    // 0.45 es un buen equilibrio: 50% del slider = ~70% saturación real
+    //  return raw.pow(0.35f).coerceIn(0f, 1f)  // Más agresivo
+    //  return raw.pow(0.6f).coerceIn(0f, 1f)   // Más suave
+    val SATURATION_CURVE = 0.35f
+
+
     // 🔥 NUEVO: guardamos el último color que enviamos nosotros
     var internalColor by remember { mutableStateOf(Color.White) }
 
@@ -62,6 +68,7 @@ fun ColorPicker(
         )
     }
 
+
     fun computeColor(h: Float, s: Float, v: Float) = Color.hsv(h, s, v)
 
     fun applyGamma(channel: Float): Int {
@@ -72,27 +79,33 @@ fun ColorPicker(
         }
     }
 
+     // 🔥 Función para mapear la saturación de forma no lineal
+    // Exponente más BAJO = más saturación al principio (menos blanco)
+   // Exponente más ALTO = menos saturación al principio (más blanco)
+
+    fun mapSaturation(raw: Float): Float = raw.pow(SATURATION_CURVE).coerceIn(0f, 1f)
+    fun unmapSaturation(mapped: Float): Float = mapped.pow(1f / SATURATION_CURVE).coerceIn(0f, 1f)
+
+
+
+
     fun notifyUpdate(h: Float, s: Float, v: Float, isFinal: Boolean) {
         val color = computeColor(h, s, v)
-
-        // 🔥 Actualizar UI local siempre
         internalColor = color
-        onColorChanged(color)
+        onColorChanged(color)  // Actualiza UI
 
-        // 🔥 Enviar al ESP32 SOLO mediante el canal (con throttling)
+        // 🔥 SOLO UNA LLAMADA: onColorStream ya maneja el throttling
+        // Y si es final, el ViewModel decide si persistir
+        onColorStream(color)
+
+        // 🔥 Si es final, notificar al ViewModel para que persista
+        // (pero NO envía al ESP32 directamente, solo guarda en SharedPreferences)
         if (isFinal) {
-            // En lugar de sendColorFinal, usamos onColorStream (que ya está throttled)
-            // Pero necesitamos que el ViewModel sepa que es "final" para persistir
-            onColorStream(color)
-            // Y también notificamos que es final (para guardar en SharedPreferences)
-            // Podemos usar sendColorFinal solo para eso, sin enviar Bluetooth
             sendColorFinal(
                 (color.red * 255).toInt(),
                 (color.green * 255).toInt(),
                 (color.blue * 255).toInt()
             )
-        } else {
-            onColorStream(color)
         }
     }
 
@@ -256,20 +269,22 @@ fun ColorPicker(
 
             // --- 2. BARRA DE SATURACIÓN ---
             ColorSeekBar(
-                value = saturation,
-                onValueChange = { newSat ->
-                    saturation = newSat
+                value = unmapSaturation(saturation),  // 🔥 El slider se mueve en espacio mapeado
+                onValueChange = { mappedValue ->
+                    saturation = mapSaturation(mappedValue)  // 🔥 Guardamos el valor real
                     notifyUpdate(hue, saturation, value, isFinal = false)
                 },
-                onValueFinal = { newSat ->
-                    saturation = newSat
+                onValueFinal = { mappedValue ->
+                    saturation = mapSaturation(mappedValue)
                     notifyUpdate(hue, saturation, value, isFinal = true)
                 },
                 onInteractionStateChange = { active -> isUserInteracting = active },
                 gradientBrush = Brush.horizontalGradient(
                     listOf(
-                        computeColor(hue, 0f, value),
-                        computeColor(hue, 1f, value)
+                        computeColor(hue, 0f, value),      // 0% saturación (blanco)
+                        computeColor(hue, 1f, value)       // 100% saturación (color puro)
+                        // 🔥 Nota: El gradiente sigue siendo lineal VISUALMENTE,
+                        // pero el slider ahora se mueve en el espacio mapeado.
                     )
                 )
             )

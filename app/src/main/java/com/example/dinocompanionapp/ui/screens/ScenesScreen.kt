@@ -2,6 +2,7 @@ package com.example.dinocompanionapp.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 import com.example.dinocompanionapp.data.Escena
@@ -104,6 +106,7 @@ fun ScenesScreen(
                                 .height(130.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(SoftPink)
+                                .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
                                 .combinedClickable(
                                     onClick = {
                                         if (mostrarAcciones) {
@@ -122,8 +125,15 @@ fun ScenesScreen(
                         ) {
                             // Info normal de la tarjeta
                             Column(modifier = Modifier.fillMaxSize()) {
-                                Text(escena.nombre)
-                                Text("💡 ${escena.brillo}%")
+                                Text(
+                                    text = escena.nombre,
+                                    color = Color.Blue,  // 🔥 O Cream, o Dark, según tu tema
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "💡 ${escena.brillo}%",
+                                    color = Color.Black.copy(alpha = 0.7f)  // 🔥 Un poco más sutil
+                                )
                                 Spacer(Modifier.weight(1f))
 
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -142,7 +152,7 @@ fun ScenesScreen(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .background(Dark.copy(alpha = 0.9f))
+                                        .background(Dark.copy(alpha = 0.8f))
                                         .padding(8.dp),
                                     horizontalArrangement = Arrangement.SpaceAround,
                                     verticalAlignment = Alignment.CenterVertically

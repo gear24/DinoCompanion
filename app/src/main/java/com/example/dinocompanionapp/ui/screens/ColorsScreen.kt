@@ -78,6 +78,7 @@ fun ColorsScreen(
         Spacer(Modifier.height(12.dp))
 
         // Caja de previsualización del color actual
+        /*
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -87,7 +88,7 @@ fun ColorsScreen(
         )
 
         Spacer(Modifier.height(20.dp))
-
+*/
         Text("Favoritos")
         Text("Selecciona un color del espectro y luego mantén presionado un cuadro de color por unos segundos. ¡Disfruta tu nuevo color!")
 

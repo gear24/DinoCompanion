@@ -113,12 +113,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
      * Llama a esto mientras ARRASTRAS el dedo en el ColorPicker.
      * Es ultra ligero y no satura el Bluetooth ni crea corrutinas descontroladas.
      */
-    fun streamColorLive(color: Color) {
-        dinoEncendido = true
-        modoActual = 0
-        currentColor = color
-        colorStreamChannel.trySend(color) // Envío instantáneo no-bloqueante
-    }
 
     fun intentarAutoConexion() {
         viewModelScope.launch {
@@ -188,10 +182,18 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // --- ACCIONES DE COLORES ---
+
+
+// --- ACCIONES DE COLORES ---
+
     fun updateCurrentColor(nuevoColor: Color) {
         currentColor = nuevoColor
         prefs.edit().putInt("current_color", nuevoColor.toArgb()).apply()
+    }
+    // 🔥 Función auxiliar para debug
+    private fun logColorInfo(tag: String, h: Float, s: Float, v: Float) {
+        Log.d("COLOR_DEBUG", "$tag - H: ${h.toInt()}°, S: ${(s * 100).toInt()}%, V: ${(v * 100).toInt()}%")
+        Log.d("COLOR_DEBUG", "$tag - Color: ${Color.hsv(h, s, v)}")
     }
 
     fun updateBrillo(nuevoBrillo: Float) {
@@ -208,37 +210,15 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         dinoEncendido = true
         modoActual = 0
         prefs.edit().putBoolean("dino_encendido", true).putInt("modo_actual", 0).apply()
-        sendColor(currentColor)
+        // 🔥 Usar el método unificado en lugar de sendColor
+        enviarColorAlESP32(currentColor, persistir = true)
     }
 
-    fun sendColor(color: Color) {
-        val r = (color.red * 255).toInt()
-        val g = (color.green * 255).toInt()
-        val b = (color.blue * 255).toInt()
+// 🔥 Este método ya no es necesario (reemplazado por enviarColorAlESP32)
+// fun sendColor(color: Color) { ... }  // ELIMINAR
 
-        currentColor = color
-        dinoEncendido = true
-        modoActual = 0
-        prefs.edit()
-            .putInt("current_color", color.toArgb())
-            .putBoolean("dino_encendido", true)
-            .putInt("modo_actual", 0)
-            .apply()
-
-        viewModelScope.launch {
-            bluetoothManager.send("$r,$g,$b")
-        }
-    }
-
-    fun sendColorRGB(r: Int, g: Int, b: Int) {
-        dinoEncendido = true
-        modoActual = 0
-        prefs.edit().putBoolean("dino_encendido", true).putInt("modo_actual", 0).apply()
-
-        viewModelScope.launch {
-            bluetoothManager.send("$r,$g,$b")
-        }
-    }
+// 🔥 Este método ya no es necesario (reemplazado por enviarColorAlESP32)
+// fun sendColorRGB(r: Int, g: Int, b: Int) { ... }  // ELIMINAR
 
     fun saveOrClearFavorite(index: Int, colorAsociado: Color) {
         if (index in favoritos.indices) {
@@ -252,6 +232,53 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             bluetoothManager.send("${DinoProtocol.BRIGHTNESS}|$value")
         }
     }
+
+    // 🔥 NUEVO: Método unificado para enviar colores (el ÚNICO que envía al ESP32)
+    private fun enviarColorAlESP32(color: Color, persistir: Boolean = false) {
+
+        val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV(color.toArgb(), hsv)
+
+        // 🔥 LOG: Mostrar valores HSV que se envían al ESP32
+        Log.d("COLOR_DEBUG", "📤 ENVIANDO AL ESP32 - H: ${hsv[0].toInt()}°, S: ${(hsv[1] * 100).toInt()}%, V: ${(hsv[2] * 100).toInt()}%")
+        Log.d("COLOR_DEBUG", "📤 Color: ${color.toArgb().toString(16)}")
+
+
+        // 1. Siempre enviar por el canal (throttled)
+        colorStreamChannel.trySend(color)
+
+        // 2. Si es final, persistir en SharedPreferences
+        if (persistir) {
+            currentColor = color
+            dinoEncendido = true
+            modoActual = 0
+            prefs.edit()
+                .putInt("current_color", color.toArgb())
+                .putBoolean("dino_encendido", true)
+                .putInt("modo_actual", 0)
+                .apply()
+            Log.d("COLOR_DEBUG", "💾 Color persistido en SharedPreferences")
+
+        }
+    }
+
+    // 🔥 Para el arrastre (streaming)
+    fun streamColorLive(color: Color) {
+        val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV(color.toArgb(), hsv)
+        Log.d("COLOR_DEBUG", "🔄 ARRASTRE - H: ${hsv[0].toInt()}°, S: ${(hsv[1] * 100).toInt()}%, V: ${(hsv[2] * 100).toInt()}%")
+        enviarColorAlESP32(color, persistir = false)
+    }
+
+    // 🔥 Para el final del arrastre (persistir)
+    fun sendColorFinal(red: Int, green: Int, blue: Int) {
+        val color = Color(red, green, blue)
+        val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV(color.toArgb(), hsv)
+        Log.d("COLOR_DEBUG", "✅ FINAL - H: ${hsv[0].toInt()}°, S: ${(hsv[1] * 100).toInt()}%, V: ${(hsv[2] * 100).toInt()}%")
+        enviarColorAlESP32(color, persistir = true)
+    }
+
 
 
 

@@ -88,9 +88,14 @@ class MainActivity : ComponentActivity() {
                                 onColorChangedInPicker = { color -> dinoViewModel.updateCurrentColor(color) },
                                 onColorStream = { color -> dinoViewModel.streamColorLive(color) },
                                 onBrilloChanged = { nBrillo -> dinoViewModel.updateBrillo(nBrillo) },
-                                onFavoritoClick = { colorFav -> dinoViewModel.sendColor(colorFav) },
-                                onFavoritoLongClick = { index, color -> dinoViewModel.saveOrClearFavorite(index, color) },
-                                onSendColor = { r, g, b -> dinoViewModel.sendColorRGB(r, g, b) },
+                                onFavoritoClick = { colorFav ->
+                                    dinoViewModel.sendColorFinal(
+                                        (colorFav.red * 255).toInt(),
+                                        (colorFav.green * 255).toInt(),
+                                        (colorFav.blue * 255).toInt()
+                                    )
+                                },                                onFavoritoLongClick = { index, color -> dinoViewModel.saveOrClearFavorite(index, color) },
+                                onSendColor = { r, g, b -> dinoViewModel.sendColorFinal(r, g, b) },
                                 onReactivarColor = {
                                     if (!dinoViewModel.dinoEncendido) {
                                         dinoViewModel.sendCurrentColor()
@@ -133,7 +138,7 @@ class MainActivity : ComponentActivity() {
                                 onActualizarEscena = { escenaEditada ->
                                     dinoViewModel.guardarNuevaEscena(escenaEditada, esEdicion = true)
                                 },
-                                onSendColorRGB = { r, g, b -> dinoViewModel.sendColorRGB(r, g, b) },
+                                onSendColorRGB = { r, g, b -> dinoViewModel.sendColorFinal(r, g, b) },
                                 onReactivarEscena = {
                                     if (!dinoViewModel.dinoEncendido) {
                                         dinoViewModel.reactivarUltimaEscena()
