@@ -10,7 +10,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import com.example.dinocompanionapp.ui.theme.DinoCompanionAppTheme
 
 import androidx.compose.foundation.layout.*
@@ -21,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import android.bluetooth.BluetoothAdapter
 
-import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -39,14 +37,14 @@ import com.example.dinocompanionapp.data.BtState
 import com.example.dinocompanionapp.data.DinoProtocol
 import kotlinx.coroutines.launch
 
-import com.example.dinocompanionapp.data.*
 import com.example.dinocompanionapp.ui.screens.*
 import com.example.dinocompanionapp.ui.components.*
-import com.example.dinocompanionapp.viewmodel.DinoViewModel
 import androidx.activity.viewModels
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.lifecycleScope
 import com.example.dinocompanionapp.ui.theme.*
 import kotlinx.coroutines.Dispatchers
+import com.example.dinocompanionapp.viewmodel.DinoViewModel
 
 /*
 val SPP_UUID: UUID = UUID.fromString(
@@ -166,13 +164,12 @@ class MainActivity : ComponentActivity() {
         var mensaje by remember { mutableStateOf("") }
         var bateria by remember { mutableIntStateOf(-1) }
         val scope = rememberCoroutineScope()
-        val context = androidx.compose.ui.platform.LocalContext.current
 
         fun procesarMensaje(message: String) {
             when {
                 message.startsWith(DinoProtocol.ACK) -> Log.d("ESP32", message)
 
-                mensaje.startsWith(DinoProtocol.HELLO_RESPONSE) -> {
+                message.startsWith(DinoProtocol.HELLO_RESPONSE) -> {
                     Log.d("ESP32", "Firmware iniciado")
                     // 🟢 Envolver en corrutina
                     lifecycleScope.launch {
@@ -211,8 +208,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val prefs = remember { context.getSharedPreferences("dino_settings", Context.MODE_PRIVATE) }
-        var dinoEncendido by remember { mutableStateOf(prefs.getBoolean("dino_encendido", false)) }
 
         Column(
             modifier = modifier
@@ -255,7 +250,7 @@ class MainActivity : ComponentActivity() {
                 Text(
                     text = errorText,
                     color = Color.White,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }

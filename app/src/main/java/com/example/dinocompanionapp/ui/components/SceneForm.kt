@@ -8,9 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +22,7 @@ import com.example.dinocompanionapp.data.*
 import com.example.dinocompanionapp.ui.theme.Cream
 import com.example.dinocompanionapp.ui.theme.Dark
 import com.example.dinocompanionapp.viewmodel.DinoViewModel
+import androidx.compose.runtime.mutableFloatStateOf
 
 
 
@@ -42,11 +41,11 @@ fun SceneForm(
     }
 
     var brilloEscena by remember(escenaAEditar) {
-        mutableStateOf(escenaAEditar?.brillo?.toFloat() ?: 50f)
+        mutableFloatStateOf(escenaAEditar?.brillo?.toFloat() ?: 50f)
     }
 
     var velocidadEscena by remember(escenaAEditar) {
-        mutableStateOf(escenaAEditar?.velocidad?.toFloat() ?: 50f)
+        mutableFloatStateOf(escenaAEditar?.velocidad?.toFloat() ?: 50f)
     }
 
     var efecto by remember(escenaAEditar) {

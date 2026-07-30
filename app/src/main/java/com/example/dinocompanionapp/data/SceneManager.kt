@@ -2,9 +2,8 @@ package com.example.dinocompanionapp.data
 
 
 import android.content.Context
-// Importamos la escena que ahora comparte el paquete data
-import com.example.dinocompanionapp.data.Escena
-import com.example.dinocompanionapp.data.*
+import androidx.core.content.edit
+
 
 object SceneManager {
 
@@ -19,20 +18,19 @@ object SceneManager {
         indice: Int,
         escena: Escena
     ) {
-        val editor = prefs(context).edit()
+        prefs(context).edit {
 
-        editor.putLong("escena_${indice}_id", escena.id)
-        editor.putString("escena_${indice}_nombre", escena.nombre)
-        editor.putString("escena_${indice}_efecto", escena.efecto.name)
-        editor.putInt("escena_${indice}_brillo", escena.brillo)
-        editor.putInt("escena_${indice}_velocidad", escena.velocidad) // 👈 Guardamos velocidad
-        editor.putInt("escena_${indice}_total_colores", escena.colores.size)
+            putLong("escena_${indice}_id", escena.id)
+            putString("escena_${indice}_nombre", escena.nombre)
+            putString("escena_${indice}_efecto", escena.efecto.name)
+            putInt("escena_${indice}_brillo", escena.brillo)
+            putInt("escena_${indice}_velocidad", escena.velocidad)
+            putInt("escena_${indice}_total_colores", escena.colores.size)
 
-        escena.colores.forEachIndexed { index, color ->
-            editor.putInt("escena_${indice}_color_$index", color)
+            escena.colores.forEachIndexed { index, color ->
+                putInt("escena_${indice}_color_$index", color)
+            }
         }
-
-        editor.apply()
     }
 
     fun cargarEscena(
@@ -71,7 +69,9 @@ object SceneManager {
     }
 
     fun guardarCantidadEscenas(context: Context, cantidad: Int) {
-        prefs(context).edit().putInt("cantidad_escenas", cantidad).apply()
+        prefs(context).edit {
+            putInt("cantidad_escenas", cantidad)
+        }
     }
 
     fun obtenerCantidadEscenas(context: Context): Int {

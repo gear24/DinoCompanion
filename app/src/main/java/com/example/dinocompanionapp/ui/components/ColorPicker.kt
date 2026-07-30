@@ -34,7 +34,7 @@ fun ColorPicker(
     onColorStream: (Color) -> Unit,
     sendColorFinal: (Int, Int, Int) -> Unit,
     modifier: Modifier = Modifier,
-    enableGammaCorrection: Boolean = true
+    //enableGammaCorrection: Boolean = true
 ) {
     var hue by remember { mutableFloatStateOf(0f) }
     var saturation by remember { mutableFloatStateOf(1f) }
@@ -60,7 +60,7 @@ fun ColorPicker(
 
 
     fun computeColor(h: Float, s: Float, v: Float) = Color.hsv(h, s, v)
-
+/*
     fun applyGamma(channel: Float): Int {
         return if (enableGammaCorrection) {
             (channel.toDouble().pow(2.2) * 255).toInt().coerceIn(0, 255)
@@ -68,7 +68,7 @@ fun ColorPicker(
             (channel * 255).toInt().coerceIn(0, 255)
         }
     }
-
+*/
      // 🔥 Función para mapear la saturación de forma no lineal
     // Exponente más BAJO = más saturación al principio (menos blanco)
    // Exponente más ALTO = menos saturación al principio (más blanco)

@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -16,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import com.example.dinocompanionapp.ui.components.DinoButton
 import com.example.dinocompanionapp.ui.components.DinoCard
 import com.example.dinocompanionapp.ui.theme.*
-import com.example.dinocompanionapp.viewmodel.DinoViewModel
 import androidx.compose.ui.graphics.Color
 import com.example.dinocompanionapp.ui.components.DinoSlider
 

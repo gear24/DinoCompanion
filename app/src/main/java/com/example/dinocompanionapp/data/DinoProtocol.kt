@@ -5,7 +5,6 @@ object DinoProtocol {
 
     const val SCENE = "ESCENA"
 
-    const val COLOR_SEPARATOR = ","
 
 
 
