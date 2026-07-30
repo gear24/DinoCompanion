@@ -367,6 +367,9 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
      * Llama a esto en CADA cambio de la UI dentro del Creador de Escenas
      * (cuando agreguen un color, muevan el slider de velocidad, etc.)
      */
+    /**
+     * Llama a esto en CADA cambio de la UI dentro del Creador de Escenas
+     */
     fun previewEscenaEnVivo(escenaTemporal: Escena) {
         dinoEncendido = true
 
@@ -382,8 +385,17 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         viewModelScope.launch {
+            // 🟢 Sincronizar brillo y enviar la escena de inmediato
             bluetoothManager.send("${DinoProtocol.BRIGHTNESS}|${escenaTemporal.brillo}")
+            kotlinx.coroutines.delay(20) // Pequeño margen entre tramas seriales
             bluetoothManager.send(stringEscena.toString())
+        }
+    }
+
+    // 🟢 Manten una función separada para cuando cambien el brillo en el slider de la escena
+    fun previewBrilloEscena(brillo: Int) {
+        viewModelScope.launch {
+            bluetoothManager.send("${DinoProtocol.BRIGHTNESS}|$brillo")
         }
     }
 

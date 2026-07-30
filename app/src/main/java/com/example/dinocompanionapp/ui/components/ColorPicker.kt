@@ -50,17 +50,7 @@ fun ColorPicker(
     // 🔥 NUEVO: guardamos el último color que enviamos nosotros
     var internalColor by remember { mutableStateOf(Color.White) }
 
-    // 🔥 Solo sincronizar si el color externo es diferente al interno
-    LaunchedEffect(currentColor) {
-        if (!isUserInteracting && currentColor != internalColor) {
-            val hsv = FloatArray(3)
-            android.graphics.Color.colorToHSV(currentColor.toArgb(), hsv)
-            hue = hsv[0]
-            saturation = hsv[1]
-            value = hsv[2]
-            internalColor = currentColor
-        }
-    }
+
     val wheelColors = remember {
         listOf(
             Color.Red, Color.Yellow, Color.Green, Color.Cyan,
@@ -86,7 +76,18 @@ fun ColorPicker(
     fun mapSaturation(raw: Float): Float = raw.pow(SATURATION_CURVE).coerceIn(0f, 1f)
     fun unmapSaturation(mapped: Float): Float = mapped.pow(1f / SATURATION_CURVE).coerceIn(0f, 1f)
 
-
+    // 🔥 Solo sincronizar si el color externo es diferente al interno
+// 🔥 Sincronizar SIEMPRE que cambie el currentColor desde afuera (al cambiar de caja o efecto)
+    LaunchedEffect(currentColor) {
+        if (!isUserInteracting) {
+            val hsv = FloatArray(3)
+            android.graphics.Color.colorToHSV(currentColor.toArgb(), hsv)
+            hue = hsv[0]
+            saturation = unmapSaturation(hsv[1]) // Sincronizar también la barra de saturación
+            value = hsv[2]
+            internalColor = currentColor
+        }
+    }
 
 
     fun notifyUpdate(h: Float, s: Float, v: Float, isFinal: Boolean) {

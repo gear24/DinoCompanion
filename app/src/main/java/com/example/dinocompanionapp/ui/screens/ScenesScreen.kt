@@ -112,8 +112,7 @@ fun ScenesScreen(
                                         if (mostrarAcciones) {
                                             idEscenaAccionesActivas = null
                                         } else {
-                                            // 🟢 CORREGIDO: Registra la escena en el ViewModel como el modo activo actual
-                                            viewModel.previewEscenaEnVivo(escena)
+                                            // 🟢 Sola una llamada: aplicarEscena ya actualiza el estado y manda el Bluetooth
                                             onAplicarEscena(escena)
                                         }
                                     },

@@ -37,11 +37,6 @@ fun SceneForm(
     onGuardar: (Escena) -> Unit,
     onCancelar: () -> Unit
 ) {
-    // Iniciar la escena previa en vivo al montar el formulario
-    LaunchedEffect(Unit) {
-        viewModel.iniciarLiveScene(escenaAEditar)
-    }
-
     var nombre by remember(escenaAEditar) {
         mutableStateOf(escenaAEditar?.nombre ?: "")
     }
@@ -58,21 +53,28 @@ fun SceneForm(
         mutableStateOf(escenaAEditar?.efecto ?: EfectoEscena.ESTATICO)
     }
 
+    fun obtenerColoresPorDefecto(tipoEfecto: EfectoEscena): List<Int> {
+        return when (tipoEfecto) {
+            EfectoEscena.ESTATICO -> listOf(Color.Red.toArgb())
+            EfectoEscena.RESPIRAR -> listOf(Color.Cyan.toArgb())
+            EfectoEscena.PARPADEO -> listOf(Color.Red.toArgb(), Color.Blue.toArgb())
+            EfectoEscena.MEZCLA -> listOf(
+                Color.Red.toArgb(),
+                Color.Green.toArgb(),
+                Color.Blue.toArgb(),
+                Color.Yellow.toArgb(),
+                Color.Magenta.toArgb()
+            )
+        }
+    }
+
+// 🟢 FIX: Si es nueva, cargar la paleta inicial del efecto por defecto (ESTATICO = 1 color)
     val coloresEscena = remember(escenaAEditar) {
         if (escenaAEditar != null) {
-            val listaExistente = escenaAEditar.colores
-            val lista = List(5) { index ->
-                if (index < listaExistente.size) listaExistente[index] else Color.Red.toArgb()
-            }
-            mutableStateListOf(*lista.toTypedArray())
+            mutableStateListOf(*escenaAEditar.colores.toTypedArray())
         } else {
-            mutableStateListOf(
-                Color.Red.toArgb(),     // 0
-                Color.Green.toArgb(),   // 1
-                Color.Blue.toArgb(),    // 2
-                Color.Yellow.toArgb(),  // 3
-                Color.Magenta.toArgb()  // 4
-            )
+            // Cargar los colores del efecto inicial real (ESTATICO), no de MEZCLA
+            mutableStateListOf(*obtenerColoresPorDefecto(efecto).toTypedArray())
         }
     }
 
@@ -87,7 +89,7 @@ fun SceneForm(
 
     var ultimoEnvioLive by remember { mutableLongStateOf(0L) }
 
-    // 🚀 Notifica los cambios enviando la escena animada con un filtro de 120ms para fluidez
+    // 🚀 Notifica los cambios enviando la escena animada
     fun notificarCambiosLive(forzar: Boolean = false) {
         val ahora = System.currentTimeMillis()
         if (forzar || (ahora - ultimoEnvioLive > 120L)) {
@@ -96,12 +98,20 @@ fun SceneForm(
                 id = escenaAEditar?.id ?: System.currentTimeMillis(),
                 nombre = nombre,
                 efecto = efecto,
-                colores = coloresEscena.take(cantidadColores),
+                // 🟢 Usamos la lista directa porque ya está limpia y garantizada
+                colores = coloresEscena.toList(),
                 brillo = brilloEscena.toInt(),
                 velocidad = velocidadEscena.toInt()
             )
             viewModel.previewEscenaEnVivo(escenaTemp)
         }
+    }
+
+    // 🟢 1. Iniciar escena previa Y FORZAR el envío inmediato al montar la pantalla
+    LaunchedEffect(Unit) {
+        viewModel.iniciarLiveScene(escenaAEditar)
+        // Forzar actualización inmediata para que el ESP32 reaccione de inmediato al entrar
+        notificarCambiosLive(forzar = true)
     }
 
     Column(
@@ -139,21 +149,33 @@ fun SceneForm(
             EfectoEscena.entries.forEach { item ->
                 Box(modifier = Modifier.weight(1f)) {
                     DinoButton(item.name) {
-                        efecto = item
-                        colorSeleccionado = 0
-                        notificarCambiosLive(forzar = true)
+                        if (efecto != item) {
+                            efecto = item
+                            colorSeleccionado = 0 // Resetear siempre al primer color
+
+                            // 🟢 FIX: Obtener la paleta limpia para el nuevo efecto
+                            val coloresNuevos = obtenerColoresPorDefecto(item)
+
+                            // Reemplazar el contenido completo de la lista para no dejar basura de otros modos
+                            coloresEscena.clear()
+                            coloresEscena.addAll(coloresNuevos)
+
+                            // Notificar inmediatamente la nueva estructura limpia al ESP32
+                            notificarCambiosLive(forzar = true)
+                        }
                     }
                 }
             }
         }
-
         Spacer(Modifier.height(16.dp))
         Text("Colores", color = Cream)
         Spacer(Modifier.height(8.dp))
 
         // CAJITAS DE COLORES
+        // CAJITAS DE COLORES
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            coloresEscena.take(cantidadColores).forEachIndexed { index, color ->
+            // 🟢 Iterar directamente sobre la lista (ya no requiere .take(cantidadColores))
+            coloresEscena.forEachIndexed { index, color ->
                 val esElSeleccionado = (index == colorSeleccionado)
                 Box(
                     modifier = Modifier
@@ -177,23 +199,25 @@ fun SceneForm(
 
         Spacer(Modifier.height(16.dp))
 
-// 🟢 CORREGIDO: Refresca la escena en vivo sin romper los efectos/mezclas con colores planos
         ColorPicker(
             currentColor = Color(coloresEscena.getOrElse(colorSeleccionado) { Color.Red.toArgb() }),
             onColorChanged = { nuevoColor ->
                 if (colorSeleccionado in coloresEscena.indices) {
                     coloresEscena[colorSeleccionado] = nuevoColor.toArgb()
-                    notificarCambiosLive(forzar = true)
                 }
             },
             onColorStream = { colorStream ->
                 if (colorSeleccionado in coloresEscena.indices) {
                     coloresEscena[colorSeleccionado] = colorStream.toArgb()
-                    notificarCambiosLive()
+                    notificarCambiosLive(forzar = false)
                 }
             },
-            sendColorFinal = { _, _, _ ->
-                notificarCambiosLive(forzar = true)
+            sendColorFinal = { r, g, b ->
+                if (colorSeleccionado in coloresEscena.indices) {
+                    // Actualizar el valor final exacto producido por el picker
+                    coloresEscena[colorSeleccionado] = android.graphics.Color.rgb(r, g, b)
+                    notificarCambiosLive(forzar = true)
+                }
             }
         )
 
@@ -205,14 +229,15 @@ fun SceneForm(
         DinoSlider(
             label = "Brillo",
             value = brilloEscena,
-            onValueChange = {
-                brilloEscena = it
+            onValueChange = { nuevoBrillo ->
+                brilloEscena = nuevoBrillo
+                viewModel.previewBrilloEscena(nuevoBrillo.toInt())
                 notificarCambiosLive()
             },
             valueRange = 0f..100f,
-            activeTrackColor = Color(0xFFFFC107),  // 🌟 Ámbar/Dorado cálido para el brillo
-            inactiveTrackColor = Dark.copy(alpha = 0.2f), // Pista inactiva sutil
-            thumbColor = Cream,                    // Botón en tono crema
+            activeTrackColor = Color(0xFFFFC107),
+            inactiveTrackColor = Dark.copy(alpha = 0.2f),
+            thumbColor = Cream,
             labelColor = Cream,
             valueFormatter = { "${it.toInt()}%" },
             warningMessage = if (efecto == EfectoEscena.RESPIRAR && brilloEscena < 20f) {
@@ -239,7 +264,7 @@ fun SceneForm(
                     notificarCambiosLive()
                 },
                 valueRange = 1f..100f,
-                activeTrackColor = Color(0xFF4DB6AC),  // 🌊 Verde turquesa / menta suave
+                activeTrackColor = Color(0xFF4DB6AC),
                 inactiveTrackColor = Dark.copy(alpha = 0.2f),
                 thumbColor = Cream,
                 labelColor = Cream,
