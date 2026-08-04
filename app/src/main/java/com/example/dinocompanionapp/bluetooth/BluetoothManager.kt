@@ -42,8 +42,6 @@ class BluetoothManager(
     var onConnectionLost: (() -> Unit)? = null
 
     private companion object {
-        const val DEVICE_NAME = "Dino_Ritmico_Prototipo"
-
         val SPP_UUID: UUID =
             UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     }
@@ -68,13 +66,21 @@ class BluetoothManager(
             BtState.RECONNECTING -> "🟠 Reconectando..."
             BtState.ERROR -> "❌ Error"
         }
+    private val prefs = context.getSharedPreferences(
+        "dino_settings",
+        Context.MODE_PRIVATE
+    )
 
+    private var deviceName = "Papas"
 
     init {
         checkBluetoothStatus()
     }
 
-
+    fun updateDeviceName(name: String) {
+        Log.d("DINO_BT", "Nuevo nombre: $name")
+        deviceName = name
+    }
     @SuppressLint("MissingPermission")
     fun checkBluetoothStatus() {
 
@@ -137,6 +143,8 @@ class BluetoothManager(
     suspend fun connect(enableReconnect: Boolean = true) {
 
         lastError = null
+        Log.d("DINO_ERROR",
+            "Buscando dispositivo: $deviceName")
 
         if (enableReconnect) {
             shouldReconnect = false
@@ -185,13 +193,15 @@ class BluetoothManager(
 
             try {
 
-                log("Buscando Dino...")
+
+
+                Log.d("DINO_BT", "Buscando: $deviceName")
 
 
                 device = bluetoothAdapter
                     ?.bondedDevices
                     ?.firstOrNull {
-                        it.name == DEVICE_NAME
+                        it.name == deviceName
                     }
 
 
@@ -216,7 +226,6 @@ class BluetoothManager(
                     requireNotNull(device)
                         .createRfcommSocketToServiceRecord(SPP_UUID)
 
-
                 newSocket.connect()
 
                 socket = newSocket
@@ -240,7 +249,9 @@ class BluetoothManager(
 
             } catch (e: Exception) {
 
-                log("Error: ${e.message}")
+                Log.d("DINO_ERROR","Error: ${e.message}")
+                Log.d("DINO_ERROR", "Error: ${e.javaClass.name} - ${e.message}")
+
 
                 clearConnection()
 

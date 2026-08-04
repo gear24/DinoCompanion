@@ -26,7 +26,13 @@ import kotlinx.coroutines.FlowPreview
 import androidx.compose.runtime.mutableLongStateOf
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.core.content.edit
+import com.example.dinocompanionapp.bluetooth.MediaSessionManager
+import com.example.dinocompanionapp.bluetooth.MusicManager
 import kotlinx.coroutines.delay
+import com.example.dinocompanionapp.data.AudioAnalysis
+import com.example.dinocompanionapp.data.DinoInfo
+import com.example.dinocompanionapp.data.MediaState
+
 
 class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -48,13 +54,21 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
 
     val bluetoothManager = BluetoothManager(appContext)
-
+    val mediaSessionManager = MediaSessionManager(appContext)
 
     // Guardar el ID de la última escena seleccionada
     var ultimaEscenaId by mutableLongStateOf(
         prefs.getLong("ultima_escena_id", -1L)
     )
         private set
+
+    // --Guardar nombre del dino
+    var dinoName by mutableStateOf(
+        prefs.getString("dino_name", "Dino") ?: "Dino"
+    )
+        private set
+
+
 
 
     // --- ESTADOS DE HOME / GLOBAL ---
@@ -120,9 +134,29 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     val listaEscenas = mutableStateListOf<Escena>()
 
 
+
+
+    // --Estados para el manejo del audio
+    var mediaState by mutableStateOf(MediaState())
+        private set
+
+    var audioAnalysis by mutableStateOf(AudioAnalysis())
+        private set
+
+    var dinoInfo by mutableStateOf(DinoInfo())
+        private set
+
+    val musicManager = MusicManager()
+
+
+
+
+
     init {
+        bluetoothManager.updateDeviceName(dinoName)
 
         configurarBluetooth()
+        configurarMediaSession()
         cargarEscenasLocales()
 
         iniciarProcesadorDeColores()
@@ -195,20 +229,20 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         when {
 
             mensaje.startsWith(DinoProtocol.ACK) ->
-                Log.d("ESP32", mensaje)
+                Log.d("DINO_ESP32", mensaje)
 
 
             mensaje.startsWith(DinoProtocol.INFO) ->
-                Log.d("ESP32", mensaje)
+                Log.d("DINO_ESP32", mensaje)
 
 
             mensaje.startsWith(DinoProtocol.ERROR) ->
-                Log.e("ESP32", mensaje)
+                Log.e("DINO_ESP32", mensaje)
 
 
             mensaje.startsWith(DinoProtocol.HELLO_RESPONSE) -> {
 
-                Log.d("ESP32", "Firmware iniciado")
+                Log.d("DINO_ESP32", "Firmware iniciado")
 
                 viewModelScope.launch {
 
@@ -237,7 +271,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             }
 
 
-            else -> Log.d("ESP32", mensaje)
+            else -> Log.d("DINO_ESP32", mensaje)
         }
     }
 
@@ -367,12 +401,12 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
 
         Log.d(
-            "COLOR_DEBUG",
+            "DINO_COLOR_DEBUG",
             "📤 ENVIANDO AL ESP32 - H: ${hsv[0].toInt()}°, S: ${(hsv[1] * 100).toInt()}%, V: ${(hsv[2] * 100).toInt()}%"
         )
 
         Log.d(
-            "COLOR_DEBUG",
+            "DINO_COLOR_DEBUG",
             "📤 Color: ${color.toArgb().toString(16)}"
         )
 
@@ -407,7 +441,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
 
             Log.d(
-                "COLOR_DEBUG",
+                "DINO_COLOR_DEBUG",
                 "💾 Color persistido en SharedPreferences"
             )
         }
@@ -424,7 +458,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         Log.d(
-            "COLOR_DEBUG",
+            "DINO_COLOR_DEBUG",
             "🔄 ARRASTRE - H: ${hsv[0].toInt()}°, S: ${(hsv[1] * 100).toInt()}%, V: ${(hsv[2] * 100).toInt()}%"
         )
 
@@ -452,7 +486,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
 
         Log.d(
-            "COLOR_DEBUG",
+            "DINO_COLOR_DEBUG",
             "✅ FINAL - H: ${hsv[0].toInt()}°, S: ${(hsv[1] * 100).toInt()}%, V: ${(hsv[2] * 100).toInt()}%"
         )
 
@@ -777,4 +811,71 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
         cargarEscenasLocales()
     }
+
+    // -- Administracion de audio
+
+    // -- Personalizacion
+    suspend fun changeDinoName(name: String) {
+
+        bluetoothManager.send(
+            DinoProtocol.SET_NAME + name
+        )
+    }
+
+
+    suspend fun restartDino() {
+
+        bluetoothManager.send(
+            DinoProtocol.RESTART
+        )
+
+    }
+
+    fun cambiarNombreDesdeUI(nombre: String) {
+
+        viewModelScope.launch {
+
+            changeDinoName(nombre)
+
+            delay(500.milliseconds)
+
+            restartDino()
+            // Actualiza inmediatamente la app
+            dinoName = nombre
+
+            prefs.edit()
+                .putString("dino_name", nombre)
+                .apply()
+
+
+
+        }
+    }
+
+    // --- CONFIGURACIÓN de sonido---
+
+    private fun configurarMediaSession() {
+
+        mediaSessionManager.onMediaChanged = { media ->
+
+            mediaState = media
+            musicManager.update(media)
+
+            Log.d(
+                "DINO_AUDIO_ViewModel",
+                media.toString()
+            )
+        }
+
+        mediaSessionManager.start()
+    }
+
+    fun hasAudioPermission(): Boolean {
+        return mediaSessionManager.hasNotificationAccess()
+    }
+    fun requestAudioPermission() {
+        mediaSessionManager.requestNotificationAccess()
+    }
+
+
 }

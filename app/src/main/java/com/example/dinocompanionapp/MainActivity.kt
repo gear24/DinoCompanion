@@ -56,6 +56,7 @@ class MainActivity : ComponentActivity() {
 
     private val dinoViewModel: DinoViewModel by viewModels()
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -164,26 +165,44 @@ class MainActivity : ComponentActivity() {
         var mensaje by remember { mutableStateOf("") }
         var bateria by remember { mutableIntStateOf(-1) }
         val scope = rememberCoroutineScope()
+        var audioPermission by remember {
+            mutableStateOf(dinoViewModel.hasAudioPermission())
+        }
+        val media = dinoViewModel.mediaState
+        var mostrarNombreDialog by remember {
+            mutableStateOf(false)
+        }
+
+        var nuevoNombre by remember {
+            mutableStateOf("")
+        }
 
         fun procesarMensaje(message: String) {
             when {
-                message.startsWith(DinoProtocol.ACK) -> Log.d("ESP32", message)
+                message.startsWith(DinoProtocol.ACK) -> {
+                    Log.d("DINO_ESP32", message)
 
+                    if (message.contains("HELLO")) {
+                        bluetoothManager.updateDeviceName(dinoViewModel.dinoName)
+                        Log.d("DINO_BT", "Nombre sincronizado: ${dinoViewModel.dinoName}")
+                    }
+                }
                 message.startsWith(DinoProtocol.HELLO_RESPONSE) -> {
-                    Log.d("ESP32", "Firmware iniciado")
+                    Log.d("DINO_ESP32", "Firmware iniciado")
                     // 🟢 Envolver en corrutina
                     lifecycleScope.launch {
                         bluetoothManager.send(DinoProtocol.BATTERY)
                     }
                 }
 
+
                 message.startsWith(DinoProtocol.BATTERY_RESPONSE) -> {
                     val porcentaje = message.substringAfter("|").toIntOrNull()
                     if (porcentaje != null) bateria = porcentaje
                 }
-                message.startsWith(DinoProtocol.INFO) -> Log.d("ESP32", message)
-                message.startsWith(DinoProtocol.ERROR) -> Log.e("ESP32", message)
-                else -> Log.d("ESP32", message)
+                message.startsWith(DinoProtocol.INFO) -> Log.d("DINO_ESP32", message)
+                message.startsWith(DinoProtocol.ERROR) -> Log.e("DINO_ESP32", message)
+                else -> Log.d("DINO_ESP32", message)
             }
         }
 
@@ -261,15 +280,129 @@ class MainActivity : ComponentActivity() {
             }
 
             Spacer(Modifier.height(24.dp))
-            DinoCard("🏠 Home del Dino")
+            DinoCard("🏠 Home de ${viewModel.dinoName}")
+            Spacer(Modifier.height(8.dp))
+
+            DinoButton("✏️ Cambiar nombre") {
+
+                nuevoNombre = viewModel.dinoName
+                mostrarNombreDialog = true
+
+            }
             Spacer(Modifier.height(16.dp))
 
             DinoButton("Colores Favoritos") { onNavigateToColors() }
             DinoButton("💡 Modos de Luz") { onNavigateToModes() }
             DinoButton("Creador de Escenas") { onNavigateToScenes() }
+            if (!audioPermission) {
 
+                DinoButton("🎵 Activar música") {
+                    dinoViewModel.requestAudioPermission()
+                }
+
+            } else {
+
+                DinoCard {
+
+                    Text(
+                        "🎵 Música",
+                        color = Dark
+                    )
+
+                    if (media.title.isNotBlank()) {
+
+                        Text("Titulo ", color=Dark)
+                        Text(
+                            media.title,
+                            color = Color.Blue
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text("Artista ", color=Dark)
+                        Text(
+                            media.artist,
+                            color = Color.Blue
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text("Album ", color=Dark)
+                        Text(
+                            media.album,
+                            color = Color.Blue
+                        )
+
+                    } else {
+
+                        Text(
+                            "Esperando música...",
+                            color = Dark
+                        )
+                    }
+                }
+            }
             DinoButton("⛔ Apagar") {
                 viewModel.turnOffDino() // 🟢 Llama al ViewModel, que usará el BluetoothManager que SÍ está conectado
+            }
+            if (mostrarNombreDialog) {
+
+                AlertDialog(
+
+                    onDismissRequest = {
+                        mostrarNombreDialog = false
+                    },
+
+                    title = {
+                        Text("Cambiar nombre del Dino")
+                    },
+
+                    text = {
+
+                        TextField(
+                            value = nuevoNombre,
+                            onValueChange = {
+                                nuevoNombre = it
+                            },
+                            placeholder = {
+                                Text(viewModel.dinoName)
+                            }
+                        )
+
+                    },
+
+                    confirmButton = {
+
+                        TextButton(
+
+                            onClick = {
+
+                                viewModel.cambiarNombreDesdeUI(nuevoNombre)
+
+                                mostrarNombreDialog = false
+
+                            }
+
+                        ) {
+
+                            Text("Aceptar y reiniciar")
+
+                        }
+
+                    },
+
+                    dismissButton = {
+
+                        TextButton(
+
+                            onClick = {
+                                mostrarNombreDialog = false
+                            }
+
+                        ) {
+
+                            Text("Cancelar")
+
+                        }
+
+                    }
+                )
             }
 
             if (mensaje.isNotBlank()) {

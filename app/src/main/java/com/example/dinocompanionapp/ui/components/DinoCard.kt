@@ -1,6 +1,7 @@
 package com.example.dinocompanionapp.ui.components
 
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -12,17 +13,30 @@ import androidx.compose.ui.unit.dp
 import com.example.dinocompanionapp.ui.theme.Beige
 import com.example.dinocompanionapp.ui.theme.Dark
 
+
+
 @Composable
-fun DinoCard(text: String) {
+fun DinoCard(
+    text: String? = null,
+    content: (@Composable () -> Unit)? = null
+) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = Beige
         )
     ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(16.dp),
-            color = Dark
-        )
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+
+            if (text != null) {
+                Text(
+                    text = text,
+                    color = Dark
+                )
+            }
+
+            content?.invoke()
+        }
     }
 }
