@@ -1,7 +1,8 @@
-package com.example.dinocompanionapp.bluetooth
+package com.example.dinocompanionapp.data.audio
 
+import kotlin.toString
 import android.content.Context
-import com.example.dinocompanionapp.data.MediaState
+import com.example.dinocompanionapp.data.audio.MediaState
 import com.example.dinocompanionapp.services.MediaListenerService
 import android.provider.Settings
 import android.content.Intent
@@ -135,27 +136,27 @@ class MediaSessionManager(
 
         val media = MediaState(
 
-                title = metadata?.getString(
-                    MediaMetadata.METADATA_KEY_TITLE
-                ) ?: "",
+            title = metadata?.getString(
+                MediaMetadata.METADATA_KEY_TITLE
+            ) ?: "",
 
-                artist = metadata?.getString(
-                    MediaMetadata.METADATA_KEY_ARTIST
-                ) ?: "",
+            artist = metadata?.getString(
+                MediaMetadata.METADATA_KEY_ARTIST
+            ) ?: "",
 
-                album = metadata?.getString(
-                    MediaMetadata.METADATA_KEY_ALBUM
-                ) ?: "",
+            album = metadata?.getString(
+                MediaMetadata.METADATA_KEY_ALBUM
+            ) ?: "",
 
-                duration = metadata?.getLong(
-                    MediaMetadata.METADATA_KEY_DURATION
-                ) ?: 0L,
+            duration = metadata?.getLong(
+                MediaMetadata.METADATA_KEY_DURATION
+            ) ?: 0L,
 
-                position = playback?.position ?: 0L,
+            position = playback?.position ?: 0L,
 
-                isPlaying = playback?.state ==
-                        PlaybackState.STATE_PLAYING
-            )
+            isPlaying = playback?.state ==
+                    PlaybackState.STATE_PLAYING
+        )
 
 
         if (media != lastMediaState) {

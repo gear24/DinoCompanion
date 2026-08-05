@@ -1,7 +1,7 @@
-package com.example.dinocompanionapp.bluetooth
+package com.example.dinocompanionapp.data.audio
 
 import android.util.Log
-import com.example.dinocompanionapp.data.MediaState
+import com.example.dinocompanionapp.data.audio.MediaState
 
 
 

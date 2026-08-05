@@ -26,12 +26,13 @@ import kotlinx.coroutines.FlowPreview
 import androidx.compose.runtime.mutableLongStateOf
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.core.content.edit
-import com.example.dinocompanionapp.bluetooth.MediaSessionManager
-import com.example.dinocompanionapp.bluetooth.MusicManager
+import com.example.dinocompanionapp.data.audio.MediaSessionManager
+import com.example.dinocompanionapp.data.audio.MusicManager
 import kotlinx.coroutines.delay
-import com.example.dinocompanionapp.data.AudioAnalysis
+import com.example.dinocompanionapp.data.audio.AudioAnalysis
 import com.example.dinocompanionapp.data.DinoInfo
-import com.example.dinocompanionapp.data.MediaState
+import com.example.dinocompanionapp.data.audio.MediaState
+import com.example.dinocompanionapp.data.audio.VolumeManager
 
 
 class DinoViewModel(application: Application) : AndroidViewModel(application) {
@@ -147,7 +148,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         private set
 
     val musicManager = MusicManager()
-
+    private val volumeManager = VolumeManager(appContext)
 
 
 
@@ -162,6 +163,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         iniciarProcesadorDeColores()
 
         intentarAutoConexion()
+        configurarVolumen()
     }
 
 
@@ -875,6 +877,22 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun requestAudioPermission() {
         mediaSessionManager.requestNotificationAccess()
+    }
+
+    private fun configurarVolumen() {
+
+        volumeManager.onVolumeChanged = { volume ->
+
+            Log.d("DINO_VOLUME_VM", "$volume%")
+
+            viewModelScope.launch {
+                bluetoothManager.send(
+                    DinoProtocol.VOLUME + volume
+                )
+            }
+        }
+
+        volumeManager.start()
     }
 
 

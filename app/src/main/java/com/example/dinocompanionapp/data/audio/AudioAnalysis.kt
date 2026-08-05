@@ -1,4 +1,5 @@
-package com.example.dinocompanionapp.data
+package com.example.dinocompanionapp.data.audio
+
 
 data class AudioAnalysis(
     val energy: Int = 0,

@@ -42,6 +42,7 @@ object DinoProtocol {
     const val MUSIC_PLAY = "PLAY"
     const val MUSIC_PAUSE = "PAUSE"
     const val MUSIC_SONG = "SONG|"
+    const val VOLUME = "VOLUMEN|"
 
 
 }
