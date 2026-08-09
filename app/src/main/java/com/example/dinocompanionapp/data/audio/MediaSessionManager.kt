@@ -41,8 +41,13 @@ class MediaSessionManager(
                 state: PlaybackState?
             ) {
                 updateMediaSession()
+
+                onPlaybackChanged?.invoke(
+                    state?.state == PlaybackState.STATE_PLAYING
+                )
             }
         }
+    var onPlaybackChanged: ((Boolean)->Unit)? = null
 
     private var currentController: MediaController? = null
     private var lastMediaState: MediaState? = null

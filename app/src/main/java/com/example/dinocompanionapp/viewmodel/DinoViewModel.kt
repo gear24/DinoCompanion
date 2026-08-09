@@ -149,7 +149,8 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
     val musicManager = MusicManager()
     private val volumeManager = VolumeManager(appContext)
-
+    var onPlaybackChanged: ((Boolean) -> Unit)? = null
+    var onMediaChanged: ((MediaState) -> Unit)? = null
 
 
 
@@ -869,6 +870,27 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
 
+
+        mediaSessionManager.onPlaybackChanged = { playing ->
+
+            viewModelScope.launch {
+
+                if (playing) {
+
+                    bluetoothManager.send(
+                        DinoProtocol.MUSIC_PLAY
+                    )
+
+                } else {
+
+                    bluetoothManager.send(
+                        DinoProtocol.MUSIC_PAUSE
+                    )
+                }
+            }
+        }
+
+
         mediaSessionManager.start()
     }
 
@@ -894,6 +916,8 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
         volumeManager.start()
     }
+
+
 
 
 }
