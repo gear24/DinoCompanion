@@ -56,11 +56,16 @@ class MediaSessionManager(
 // --- CONTROL DEL SERVICIO ---
 
     fun start() {
+        Log.d("DINO_AUDIO_DEBUG", "MediaSessionManager.start()")
+
         MediaListenerService.onSessionChanged = {
+            Log.d("DINO_AUDIO_DEBUG", "onSessionChanged")
             actualizarSesion()
         }
 
-        actualizarSesion()
+        if (hasNotificationAccess()) {
+            actualizarSesion()
+        }
     }
 
 
@@ -120,10 +125,10 @@ class MediaSessionManager(
         val sessions = mediaSessionManager
             .getActiveSessions(component)
 
-        Log.d(
-            "DINO_AUDIO_Media_Session",
-            "Sesiones activas: ${sessions.size}"
-        )
+//        Log.d(
+//            "DINO_AUDIO_Media_Session",
+//            "Sesiones activas: ${sessions.size}"
+//        )
 
         val session = sessions.firstOrNull() ?: return
 
@@ -168,10 +173,7 @@ class MediaSessionManager(
 
             lastMediaState = media
 
-            Log.d(
-                "DINO_AUDIO_Media_Session_2",
-                media.toString()
-            )
+
 
             onMediaChanged?.invoke(media)
         }

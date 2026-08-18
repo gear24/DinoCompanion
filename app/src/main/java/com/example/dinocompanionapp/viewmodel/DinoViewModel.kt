@@ -29,7 +29,6 @@ import androidx.core.content.edit
 import com.example.dinocompanionapp.data.audio.MediaSessionManager
 import com.example.dinocompanionapp.data.audio.MusicManager
 import kotlinx.coroutines.delay
-import com.example.dinocompanionapp.data.audio.AudioAnalysis
 import com.example.dinocompanionapp.data.DinoInfo
 import com.example.dinocompanionapp.data.audio.MediaState
 import com.example.dinocompanionapp.data.audio.VolumeManager
@@ -141,28 +140,21 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     var mediaState by mutableStateOf(MediaState())
         private set
 
-    var audioAnalysis by mutableStateOf(AudioAnalysis())
-        private set
+
 
     var dinoInfo by mutableStateOf(DinoInfo())
         private set
 
     val musicManager = MusicManager()
     private val volumeManager = VolumeManager(appContext)
-    var onPlaybackChanged: ((Boolean) -> Unit)? = null
-    var onMediaChanged: ((MediaState) -> Unit)? = null
-
 
 
     init {
         bluetoothManager.updateDeviceName(dinoName)
-
         configurarBluetooth()
         configurarMediaSession()
         cargarEscenasLocales()
-
         iniciarProcesadorDeColores()
-
         intentarAutoConexion()
         configurarVolumen()
     }
@@ -304,6 +296,10 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
             bluetoothManager.send("0")
         }
+    }
+
+    fun hasBtPermission(): Boolean {
+        return bluetoothManager.hasBtPermission()
     }
 
 
@@ -856,7 +852,12 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- CONFIGURACIÓN de sonido---
-
+    fun Long.formatAsTime(): String {
+        val totalSegundos = this / 1000
+        val minutos = totalSegundos / 60
+        val segundos = totalSegundos % 60
+        return String.format("%02d:%02d", minutos, segundos)
+    }
     private fun configurarMediaSession() {
 
         mediaSessionManager.onMediaChanged = { media ->
@@ -864,11 +865,18 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             mediaState = media
             musicManager.update(media)
 
-            Log.d(
-                "DINO_AUDIO_ViewModel",
-                media.toString()
-            )
+            viewModelScope.launch {
+                val duracionReloj = media.duration.formatAsTime()
+                val posicionReloj = media.position.formatAsTime()
+                bluetoothManager.send(
+                    DinoProtocol.MUSIC_SONG +
+                            "${media.title}|${media.artist}|$posicionReloj| $duracionReloj"
+                )
+            }
+
+
         }
+
 
 
         mediaSessionManager.onPlaybackChanged = { playing ->

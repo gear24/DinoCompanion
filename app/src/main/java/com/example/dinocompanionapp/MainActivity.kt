@@ -45,6 +45,13 @@ import androidx.lifecycle.lifecycleScope
 import com.example.dinocompanionapp.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import com.example.dinocompanionapp.viewmodel.DinoViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import android.Manifest
+import android.os.Build
+
+
 
 /*
 val SPP_UUID: UUID = UUID.fromString(
@@ -167,6 +174,28 @@ class MainActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
         var audioPermission by remember {
             mutableStateOf(dinoViewModel.hasAudioPermission())
+        }
+        val bluetoothPermissionLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) {
+
+        }
+
+        val lifecycleOwner = LocalLifecycleOwner.current
+
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    audioPermission = dinoViewModel.hasAudioPermission()
+                }
+            }
+
+            lifecycleOwner.lifecycle.addObserver(observer)
+
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
+            }
         }
         val media = dinoViewModel.mediaState
         var mostrarNombreDialog by remember {
@@ -338,6 +367,23 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+
+            LaunchedEffect(Unit) {
+
+                if (!dinoViewModel.hasBtPermission()) {
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+
+                        bluetoothPermissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.BLUETOOTH_SCAN,
+                                Manifest.permission.BLUETOOTH_CONNECT
+                            )
+                        )
+                    }
+                }
+            }
+
             DinoButton("⛔ Apagar") {
                 viewModel.turnOffDino() // 🟢 Llama al ViewModel, que usará el BluetoothManager que SÍ está conectado
             }
