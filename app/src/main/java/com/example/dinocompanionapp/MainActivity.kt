@@ -178,7 +178,7 @@ class MainActivity : ComponentActivity() {
         val bluetoothPermissionLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
         ) {
-
+            bluetoothManager.checkBluetoothStatus()
         }
 
         val lifecycleOwner = LocalLifecycleOwner.current
@@ -253,6 +253,21 @@ class MainActivity : ComponentActivity() {
         ) {
             if (BluetoothAdapter.getDefaultAdapter()?.isEnabled == true) {
                 scope.launch(Dispatchers.IO) { bluetoothManager.connect() }
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            bluetoothManager.checkBluetoothStatus()
+
+            if (!dinoViewModel.hasBtPermission()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    bluetoothPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.BLUETOOTH_SCAN,
+                            Manifest.permission.BLUETOOTH_CONNECT
+                        )
+                    )
+                }
             }
         }
 
@@ -368,21 +383,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            LaunchedEffect(Unit) {
 
-                if (!dinoViewModel.hasBtPermission()) {
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-
-                        bluetoothPermissionLauncher.launch(
-                            arrayOf(
-                                Manifest.permission.BLUETOOTH_SCAN,
-                                Manifest.permission.BLUETOOTH_CONNECT
-                            )
-                        )
-                    }
-                }
-            }
 
             DinoButton("⛔ Apagar") {
                 viewModel.turnOffDino() // 🟢 Llama al ViewModel, que usará el BluetoothManager que SÍ está conectado

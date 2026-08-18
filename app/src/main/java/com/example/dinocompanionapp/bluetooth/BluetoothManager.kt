@@ -84,17 +84,25 @@ class BluetoothManager(
     @SuppressLint("MissingPermission")
     fun checkBluetoothStatus() {
 
+        if (!hasBtPermission()) {
+
+            lastError = "Dino necesita permiso de dispositivos cercanos."
+            state = BtState.ERROR
+            return
+        }
+
         if (bluetoothAdapter?.isEnabled != true) {
 
-            lastError = "Bluetooth apagado. Actívalo para conectar con Dino."
+            lastError =
+                "Bluetooth apagado. Actívalo para conectar con Dino."
+
             state = BtState.ERROR
+            return
+        }
 
-        } else if (
-            state == BtState.ERROR &&
-            lastError?.contains("Bluetooth apagado") == true
-        ) {
+        lastError = null
 
-            lastError = null
+        if (state == BtState.ERROR) {
             state = BtState.DISCONNECTED
         }
     }
