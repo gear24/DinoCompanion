@@ -218,7 +218,7 @@ class BluetoothManager(
                     withContext(Dispatchers.Main) {
 
                         lastError =
-                            "No pudimos conectar con tu Dino. Verifica que esté encendido y dentro del alcance Bluetooth."
+                            "Dino no está vinculado. Ve a Ajustes → Bluetooth y vincúlalo."
 
                         state = BtState.ERROR
                     }

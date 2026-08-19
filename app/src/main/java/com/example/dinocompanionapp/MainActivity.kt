@@ -49,8 +49,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import android.Manifest
+import android.content.Context
 import android.os.Build
-
+import android.os.PowerManager
+import android.provider.Settings
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 
 
 /*
@@ -182,12 +186,23 @@ class MainActivity : ComponentActivity() {
         }
 
         val lifecycleOwner = LocalLifecycleOwner.current
+        val context = LocalContext.current
+        var batteryOptimization by remember {
+            mutableStateOf(true)
+        }
 
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
 
                 if (event == Lifecycle.Event.ON_RESUME) {
                     audioPermission = dinoViewModel.hasAudioPermission()
+                    val powerManager =
+                        context.getSystemService(Context.POWER_SERVICE) as PowerManager
+
+                    batteryOptimization =
+                        powerManager.isIgnoringBatteryOptimizations(
+                            context.packageName
+                        )
                 }
             }
 
@@ -205,6 +220,8 @@ class MainActivity : ComponentActivity() {
         var nuevoNombre by remember {
             mutableStateOf("")
         }
+
+
 
         fun procesarMensaje(message: String) {
             when {
@@ -384,7 +401,38 @@ class MainActivity : ComponentActivity() {
             }
 
 
+            if (!batteryOptimization) {
 
+                DinoCard {
+
+                    Text(
+                        "🔋 Optimización de batería",
+                        color = Dark
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+
+                    Text(
+                        "Para mantener la conexión con Dino y actualizar la música en segundo plano, se recomienda usar \"Sin restricciones\".",
+                        color = Dark,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(Modifier.height(10.dp))
+
+                    DinoButton("⚙️ Configurar batería") {
+
+                        val intent = Intent().apply {
+                            action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                            data = Uri.parse("package:${context.packageName}")
+                        }
+
+                        context.startActivity(intent)
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+            }
             DinoButton("⛔ Apagar") {
                 viewModel.turnOffDino() // 🟢 Llama al ViewModel, que usará el BluetoothManager que SÍ está conectado
             }
