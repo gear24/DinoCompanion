@@ -68,7 +68,9 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     )
         private set
 
-
+    // -- estados de la bateria
+    var ultimoRaw by mutableStateOf<Int?>(null)
+    var ultimoVoltaje by mutableStateOf<Float?>(null)
 
 
     // --- ESTADOS DE HOME / GLOBAL ---
@@ -215,11 +217,12 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     private fun iniciarActualizacionBateria() {
         viewModelScope.launch {
             while (true) {
-                delay(60_000)
-
+                // Pide batería de inmediato si está conectado
                 if (bluetoothManager.isConnected()) {
                     bluetoothManager.send(DinoProtocol.BATTERY)
                 }
+                // Luego espera los 60 segundos para la próxima comprobación
+                delay(60_000)
             }
         }
     }
@@ -236,45 +239,31 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
 
     private fun procesarMensaje(mensaje: String) {
-
         when {
-
-            mensaje.startsWith(DinoProtocol.ACK) ->
-                Log.d("DINO_ESP32", mensaje)
-
-
-            mensaje.startsWith(DinoProtocol.INFO) ->
-                Log.d("DINO_ESP32", mensaje)
-
-
-            mensaje.startsWith(DinoProtocol.ERROR) ->
-                Log.e("DINO_ESP32", mensaje)
-
-
-            mensaje.startsWith(DinoProtocol.HELLO_RESPONSE) -> {
-
-                Log.d("DINO_ESP32", "Firmware iniciado")
+            // 1. PRIMERO evaluamos los mensajes específicos (como ACK|HELLO o HELLO_RESPONSE)
+            mensaje.contains("HELLO") || mensaje.startsWith(DinoProtocol.HELLO_RESPONSE) -> {
+                Log.d("DINO_ESP32", "Firmware iniciado: $mensaje")
 
                 viewModelScope.launch {
-
                     bluetoothManager.send(DinoProtocol.BATTERY)
 
                     if (dinoEncendido) {
-
                         sendCurrentColor()
-
-                        bluetoothManager.send(
-                            "${DinoProtocol.BRIGHTNESS}|${brillo.toInt()}"
-                        )
+                        bluetoothManager.send("${DinoProtocol.BRIGHTNESS}|${brillo.toInt()}")
                     }
                 }
             }
 
+            // 2. DESPUÉS el ACK genérico para cualquier otro comando
+            mensaje.startsWith(DinoProtocol.ACK) -> {
+                Log.d("DINO_ESP32", mensaje)
+            }
+
+            mensaje.startsWith(DinoProtocol.INFO) -> Log.d("DINO_ESP32", mensaje)
+            mensaje.startsWith(DinoProtocol.ERROR) -> Log.e("DINO_ESP32", mensaje)
 
             mensaje.startsWith(DinoProtocol.BATTERY_RESPONSE) -> {
-
                 val partes = mensaje.split("|")
-
                 val porcentaje = partes.getOrNull(1)?.toIntOrNull()
 
                 if (porcentaje != null) {
@@ -286,34 +275,37 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
                         else -> "Normal"
                     }
 
-                    val raw = partes.getOrNull(2)?.toIntOrNull()
-                    val voltaje = partes.getOrNull(3)?.toFloatOrNull()
+                    // Si el ESP32 mandó todo en una sola trama de 4 partes:
+                    val rawDirecto = partes.getOrNull(2)?.toIntOrNull()
+                    val voltajeDirecto = partes.getOrNull(3)?.toFloatOrNull()
+
+                    if (rawDirecto != null && voltajeDirecto != null) {
+                        ultimoRaw = rawDirecto
+                        ultimoVoltaje = voltajeDirecto
+                    }
 
                     Log.d(
                         "DINO_BATTERY",
-                        "Batería recibida: $porcentaje% | RAW: $raw | BAT: ${voltaje}V | Estado: $estadoBateria"
+                        "Batería recibida: $porcentaje% | RAW: ${ultimoRaw ?: "esperando..."} | BAT: ${ultimoVoltaje?.let { "${it}V" } ?: "esperando..."} | Estado: $estadoBateria"
                     )
                 }
             }
 
             mensaje.startsWith("BATINFO|") -> {
-
                 val partes = mensaje.split("|")
+                val raw = partes.getOrNull(1)?.toIntOrNull()
+                val voltaje = partes.getOrNull(2)?.toFloatOrNull()
 
-                val raw = partes.getOrNull(1)
-                val voltaje = partes.getOrNull(2)
-
-                Log.d(
-                    "DINO_BATTERY",
-                    "RAW: $raw | BAT: ${voltaje}V"
-                )
+                if (raw != null && voltaje != null) {
+                    ultimoRaw = raw
+                    ultimoVoltaje = voltaje
+                    Log.d("DINO_BATTERY", "RAW: $raw | BAT: ${voltaje}V")
+                }
             }
-
 
             else -> Log.d("DINO_ESP32", mensaje)
         }
     }
-
 
     private fun procesarMensajeESP32(mensaje: String) {
         procesarMensaje(mensaje)

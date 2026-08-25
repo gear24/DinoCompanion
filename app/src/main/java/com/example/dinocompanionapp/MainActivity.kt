@@ -173,12 +173,16 @@ class MainActivity : ComponentActivity() {
         onNavigateToScenes: () -> Unit,
         modifier: Modifier = Modifier
     ) {
+        // 🔴 BORRADO: var bateria por remember { mutableIntStateOf(-1) }
+        // 🔴 BORRADO: LaunchedEffect(bluetoothManager) { ... } con procesarMensaje local
+        // 🔴 BORRADO: fun procesarMensaje(...)
+
         var mensaje by remember { mutableStateOf("") }
-        var bateria by remember { mutableIntStateOf(-1) }
         val scope = rememberCoroutineScope()
         var audioPermission by remember {
             mutableStateOf(dinoViewModel.hasAudioPermission())
         }
+
         val bluetoothPermissionLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
         ) {
@@ -193,7 +197,6 @@ class MainActivity : ComponentActivity() {
 
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
-
                 if (event == Lifecycle.Event.ON_RESUME) {
                     audioPermission = dinoViewModel.hasAudioPermission()
                     val powerManager =
@@ -212,58 +215,10 @@ class MainActivity : ComponentActivity() {
                 lifecycleOwner.lifecycle.removeObserver(observer)
             }
         }
+
         val media = dinoViewModel.mediaState
-        var mostrarNombreDialog by remember {
-            mutableStateOf(false)
-        }
-
-        var nuevoNombre by remember {
-            mutableStateOf("")
-        }
-
-
-
-        fun procesarMensaje(message: String) {
-            when {
-                message.startsWith(DinoProtocol.ACK) -> {
-                    Log.d("DINO_ESP32", message)
-
-                    if (message.contains("HELLO")) {
-                        bluetoothManager.updateDeviceName(dinoViewModel.dinoName)
-                        Log.d("DINO_BT", "Nombre sincronizado: ${dinoViewModel.dinoName}")
-
-                        lifecycleScope.launch {
-                            bluetoothManager.send(DinoProtocol.BATTERY)
-                        }
-                    }
-                }
-                message.startsWith(DinoProtocol.HELLO_RESPONSE) -> {
-                    Log.d("DINO_ESP32", "Firmware iniciado")
-                    // 🟢 Envolver en corrutina
-                    lifecycleScope.launch {
-                        bluetoothManager.send(DinoProtocol.BATTERY)
-                    }
-                }
-
-
-                message.startsWith(DinoProtocol.BATTERY_RESPONSE) -> {
-                    val porcentaje = message.substringAfter("|").toIntOrNull()
-
-                    if (porcentaje != null) {
-                        bateria = porcentaje
-                        Log.d("DINO_ESP32", "Batería recibida: $porcentaje%")
-                    }
-                }
-
-                message.startsWith(DinoProtocol.INFO) -> Log.d("DINO_ESP32", message)
-                message.startsWith(DinoProtocol.ERROR) -> Log.e("DINO_ESP32", message)
-                else -> Log.d("DINO_ESP32", message)
-            }
-        }
-
-        LaunchedEffect(bluetoothManager) {
-            bluetoothManager.onMessageReceived = { message -> procesarMensaje(message) }
-        }
+        var mostrarNombreDialog by remember { mutableStateOf(false) }
+        var nuevoNombre by remember { mutableStateOf("") }
 
         val textoConexion = when (bluetoothManager.state) {
             BtState.DISCONNECTED -> "🔴 Conectar Dino"
@@ -273,7 +228,6 @@ class MainActivity : ComponentActivity() {
             BtState.ERROR -> "🔴 Conectar Dino"
         }
 
-        // Launcher ejecutando la conexión en hilo secundario IO
         val enableBtLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) {
@@ -297,7 +251,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-
         Column(
             modifier = modifier
                 .fillMaxSize()
@@ -310,7 +263,6 @@ class MainActivity : ComponentActivity() {
 
             Spacer(Modifier.height(24.dp))
 
-            // Botón de conexión con ejecución en Dispatchers.IO
             DinoButton(textoConexion) {
                 when (bluetoothManager.state) {
                     BtState.DISCONNECTED, BtState.ERROR -> {
@@ -327,13 +279,11 @@ class MainActivity : ComponentActivity() {
 
             Spacer(Modifier.height(8.dp))
 
-            // Texto de estado principal
             Text(
                 text = bluetoothManager.statusText,
                 color = Color.White
             )
 
-            // Detalle del error en blanco
             bluetoothManager.lastError?.let { errorText ->
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -344,9 +294,10 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            if (bateria >= 0) {
+            // 🟢 AHORA LEEMOS LA BATERÍA DIRECTO DESDE EL VIEWMODEL:
+            if (viewModel.bateria >= 0) {
                 Spacer(Modifier.height(4.dp))
-                Text("🔋 Batería: $bateria%", color = Color.White)
+                Text("🔋 Batería: ${viewModel.bateria}% (${viewModel.estadoBateria})", color = Color.White)
             }
 
             Spacer(Modifier.height(24.dp))
@@ -354,53 +305,36 @@ class MainActivity : ComponentActivity() {
             Spacer(Modifier.height(8.dp))
 
             DinoButton("✏️ Cambiar nombre") {
-
                 nuevoNombre = viewModel.dinoName
                 mostrarNombreDialog = true
-
             }
             Spacer(Modifier.height(16.dp))
 
             DinoButton("Colores Favoritos") { onNavigateToColors() }
             DinoButton("💡 Modos de Luz") { onNavigateToModes() }
             DinoButton("Creador de Escenas") { onNavigateToScenes() }
-            if (!audioPermission) {
 
+            if (!audioPermission) {
                 DinoButton("🎵 Activar música") {
                     dinoViewModel.requestAudioPermission()
                 }
-
             } else {
-
                 DinoCard {
-
                     Text(
                         "🎵 Música",
                         color = Dark
                     )
 
                     if (media.title.isNotBlank()) {
-
                         Text("Titulo ", color=Dark)
-                        Text(
-                            media.title,
-                            color = Color.Blue
-                        )
+                        Text(media.title, color = Color.Blue)
                         Spacer(Modifier.height(6.dp))
                         Text("Artista ", color=Dark)
-                        Text(
-                            media.artist,
-                            color = Color.Blue
-                        )
+                        Text(media.artist, color = Color.Blue)
                         Spacer(Modifier.height(6.dp))
                         Text("Album ", color=Dark)
-                        Text(
-                            media.album,
-                            color = Color.Blue
-                        )
-
+                        Text(media.album, color = Color.Blue)
                     } else {
-
                         Text(
                             "Esperando música...",
                             color = Dark
@@ -409,11 +343,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-
             if (!batteryOptimization) {
-
                 DinoCard {
-
                     Text(
                         "🔋 Optimización de batería",
                         color = Dark
@@ -430,81 +361,48 @@ class MainActivity : ComponentActivity() {
                     Spacer(Modifier.height(10.dp))
 
                     DinoButton("⚙️ Configurar batería") {
-
                         val intent = Intent().apply {
                             action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
                             data = Uri.parse("package:${context.packageName}")
                         }
-
                         context.startActivity(intent)
                     }
                 }
 
                 Spacer(Modifier.height(16.dp))
             }
+
             DinoButton("⛔ Apagar") {
-                viewModel.turnOffDino() // 🟢 Llama al ViewModel, que usará el BluetoothManager que SÍ está conectado
+                viewModel.turnOffDino()
             }
+
             if (mostrarNombreDialog) {
-
                 AlertDialog(
-
-                    onDismissRequest = {
-                        mostrarNombreDialog = false
-                    },
-
-                    title = {
-                        Text("Cambiar nombre del Dino")
-                    },
-
+                    onDismissRequest = { mostrarNombreDialog = false },
+                    title = { Text("Cambiar nombre del Dino") },
                     text = {
-
                         TextField(
                             value = nuevoNombre,
-                            onValueChange = {
-                                nuevoNombre = it
-                            },
-                            placeholder = {
-                                Text(viewModel.dinoName)
-                            }
+                            onValueChange = { nuevoNombre = it },
+                            placeholder = { Text(viewModel.dinoName) }
                         )
-
                     },
-
                     confirmButton = {
-
                         TextButton(
-
                             onClick = {
-
                                 viewModel.cambiarNombreDesdeUI(nuevoNombre)
-
                                 mostrarNombreDialog = false
-
                             }
-
                         ) {
-
                             Text("Aceptar y reiniciar")
-
                         }
-
                     },
-
                     dismissButton = {
-
                         TextButton(
-
-                            onClick = {
-                                mostrarNombreDialog = false
-                            }
-
+                            onClick = { mostrarNombreDialog = false }
                         ) {
-
                             Text("Cancelar")
-
                         }
-
                     }
                 )
             }
