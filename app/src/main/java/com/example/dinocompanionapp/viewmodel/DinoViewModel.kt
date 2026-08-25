@@ -76,6 +76,9 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     var bateria by mutableIntStateOf(-1)
         private set
 
+    var estadoBateria by mutableStateOf("Normal")
+        private set
+
 
     var modoActual by mutableIntStateOf(
         prefs.getInt("modo_actual", 0)
@@ -157,6 +160,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         iniciarProcesadorDeColores()
         intentarAutoConexion()
         configurarVolumen()
+        iniciarActualizacionBateria()
     }
 
 
@@ -205,6 +209,18 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
         bluetoothManager.onConnectionLost = {
             animState = false
+        }
+    }
+
+    private fun iniciarActualizacionBateria() {
+        viewModelScope.launch {
+            while (true) {
+                delay(60_000)
+
+                if (bluetoothManager.isConnected()) {
+                    bluetoothManager.send(DinoProtocol.BATTERY)
+                }
+            }
         }
     }
 
@@ -257,12 +273,40 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
             mensaje.startsWith(DinoProtocol.BATTERY_RESPONSE) -> {
 
-                mensaje.substringAfter("|")
-                    .toIntOrNull()
-                    ?.let { porcentaje ->
+                val partes = mensaje.split("|")
 
-                        bateria = porcentaje
+                val porcentaje = partes.getOrNull(1)?.toIntOrNull()
+
+                if (porcentaje != null) {
+                    bateria = porcentaje
+
+                    estadoBateria = when {
+                        porcentaje <= 10 -> "¡Carga a Dino!"
+                        porcentaje <= 20 -> "Batería baja"
+                        else -> "Normal"
                     }
+
+                    val raw = partes.getOrNull(2)?.toIntOrNull()
+                    val voltaje = partes.getOrNull(3)?.toFloatOrNull()
+
+                    Log.d(
+                        "DINO_BATTERY",
+                        "Batería recibida: $porcentaje% | RAW: $raw | BAT: ${voltaje}V | Estado: $estadoBateria"
+                    )
+                }
+            }
+
+            mensaje.startsWith("BATINFO|") -> {
+
+                val partes = mensaje.split("|")
+
+                val raw = partes.getOrNull(1)
+                val voltaje = partes.getOrNull(2)
+
+                Log.d(
+                    "DINO_BATTERY",
+                    "RAW: $raw | BAT: ${voltaje}V"
+                )
             }
 
 

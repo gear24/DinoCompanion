@@ -231,6 +231,10 @@ class MainActivity : ComponentActivity() {
                     if (message.contains("HELLO")) {
                         bluetoothManager.updateDeviceName(dinoViewModel.dinoName)
                         Log.d("DINO_BT", "Nombre sincronizado: ${dinoViewModel.dinoName}")
+
+                        lifecycleScope.launch {
+                            bluetoothManager.send(DinoProtocol.BATTERY)
+                        }
                     }
                 }
                 message.startsWith(DinoProtocol.HELLO_RESPONSE) -> {
@@ -244,8 +248,13 @@ class MainActivity : ComponentActivity() {
 
                 message.startsWith(DinoProtocol.BATTERY_RESPONSE) -> {
                     val porcentaje = message.substringAfter("|").toIntOrNull()
-                    if (porcentaje != null) bateria = porcentaje
+
+                    if (porcentaje != null) {
+                        bateria = porcentaje
+                        Log.d("DINO_ESP32", "Batería recibida: $porcentaje%")
+                    }
                 }
+
                 message.startsWith(DinoProtocol.INFO) -> Log.d("DINO_ESP32", message)
                 message.startsWith(DinoProtocol.ERROR) -> Log.e("DINO_ESP32", message)
                 else -> Log.d("DINO_ESP32", message)
