@@ -90,49 +90,118 @@ class MainActivity : ComponentActivity() {
                                 modifier = modifierConPadding
                             )
                         }
+
                         "colors" -> {
                             ColorsScreen(
                                 currentColor = dinoViewModel.currentColor,
-                                brillo = dinoViewModel.brillo,
+                                brilloColor = dinoViewModel.brilloColor,
                                 favoritos = dinoViewModel.favoritos,
-                                onColorChangedInPicker = { color -> dinoViewModel.updateCurrentColor(color) },
-                                onColorStream = { color -> dinoViewModel.streamColorLive(color) },
-                                onBrilloChanged = { nBrillo -> dinoViewModel.updateBrillo(nBrillo) },
-                                onFavoritoClick = { colorFav ->
-                                    dinoViewModel.sendColorFinal(
-                                        (colorFav.red * 255).toInt(),
-                                        (colorFav.green * 255).toInt(),
-                                        (colorFav.blue * 255).toInt()
+
+                                onColorChangedInPicker = { color ->
+                                    dinoViewModel.updateCurrentColor(color)
+                                },
+
+                                onColorStream = { color ->
+                                    dinoViewModel.streamColorLive(color)
+                                },
+
+                                onBrilloChanged = { nuevoBrillo ->
+                                    dinoViewModel.updateBrilloColor(nuevoBrillo)
+                                },
+
+                                onFavoritoClick = { favorito ->
+                                    favorito.color?.let { color ->
+                                        dinoViewModel.sendColorFinal(
+                                            (color.red * 255).toInt(),
+                                            (color.green * 255).toInt(),
+                                            (color.blue * 255).toInt()
+                                        )
+
+                                        dinoViewModel.updateBrilloColor(
+                                            favorito.brillo
+                                        )
+                                    }
+                                },
+
+                                onFavoritoLongClick = { index, color, brillo ->
+                                    dinoViewModel.saveOrClearFavorite(
+                                        index,
+                                        color,
+                                        brillo
                                     )
-                                },                                onFavoritoLongClick = { index, color -> dinoViewModel.saveOrClearFavorite(index, color) },
-                                onSendColor = { r, g, b -> dinoViewModel.sendColorFinal(r, g, b) },
+                                },
+
+                                onSendColor = { r, g, b ->
+                                    dinoViewModel.sendColorFinal(r, g, b)
+                                },
+
                                 onReactivarColor = {
                                     if (!dinoViewModel.dinoEncendido) {
                                         dinoViewModel.sendCurrentColor()
                                     }
                                 },
-                                onBackToHome = { pantalla = "home" },
+
+                                onBackToHome = {
+                                    pantalla = "home"
+                                },
+
                                 modifier = modifierConPadding
                             )
                         }
+
                         "modes" -> {
                             ModesScreen(
                                 animState = dinoViewModel.animState,
-                                brightness = dinoViewModel.brillo, // 👈 Usa el brillo unificado
-                                onBrightnessChanged = { nuevoBrillo -> dinoViewModel.updateBrillo(nuevoBrillo) }, // 👈 Usa la función única
-                                onStartLava = { dinoViewModel.startLava() },
-                                onStartArcoiris = { dinoViewModel.startArcoiris() },
-                                onStartRespirar = { dinoViewModel.startRespirar() },
-                                onStartOcean = { dinoViewModel.startOcean() },
-                                onStartForest = { dinoViewModel.startForest() },
-                                onStartParty = { dinoViewModel.startParty() },
-                                onStopAnimation = { dinoViewModel.stopAnimation() },
+
+                                brightness = dinoViewModel.brilloModo(
+                                    dinoViewModel.modoActual
+                                ),
+
+                                onBrightnessChanged = { nuevoBrillo ->
+                                    dinoViewModel.updateBrilloModo(
+                                        dinoViewModel.modoActual,
+                                        nuevoBrillo
+                                    )
+                                },
+
+                                onStartLava = {
+                                    dinoViewModel.startLava()
+                                },
+
+                                onStartArcoiris = {
+                                    dinoViewModel.startArcoiris()
+                                },
+
+                                onStartRespirar = {
+                                    dinoViewModel.startRespirar()
+                                },
+
+                                onStartOcean = {
+                                    dinoViewModel.startOcean()
+                                },
+
+                                onStartForest = {
+                                    dinoViewModel.startForest()
+                                },
+
+                                onStartParty = {
+                                    dinoViewModel.startParty()
+                                },
+
+                                onStopAnimation = {
+                                    dinoViewModel.stopAnimation()
+                                },
+
                                 onReactivarModo = {
                                     if (!dinoViewModel.dinoEncendido) {
                                         dinoViewModel.reactivarUltimoModo()
                                     }
                                 },
-                                onBackToHome = { pantalla = "home" },
+
+                                onBackToHome = {
+                                    pantalla = "home"
+                                },
+
                                 modifier = modifierConPadding
                             )
                         }

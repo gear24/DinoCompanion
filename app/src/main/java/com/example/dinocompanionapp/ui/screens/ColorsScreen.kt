@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,18 +21,23 @@ import com.example.dinocompanionapp.ui.components.DinoButton
 import com.example.dinocompanionapp.ui.components.DinoCard
 import com.example.dinocompanionapp.ui.components.DinoSlider
 import com.example.dinocompanionapp.ui.theme.*
+import com.example.dinocompanionapp.viewmodel.DinoViewModel
+
+
+
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ColorsScreen(
     currentColor: Color,
-    brillo: Float,
-    favoritos: List<Color?>,
+    brilloColor: Float,
+    favoritos: List<DinoViewModel.Favorito>,
     onColorChangedInPicker: (Color) -> Unit,
-    onColorStream: (Color) -> Unit, // 👈 1. AGREGADO AQUÍ
+    onColorStream: (Color) -> Unit,
     onBrilloChanged: (Float) -> Unit,
-    onFavoritoClick: (Color) -> Unit,
-    onFavoritoLongClick: (Int, Color) -> Unit,
+    onFavoritoClick: (DinoViewModel.Favorito) -> Unit,
+    onFavoritoLongClick: (Int, Color, Float) -> Unit,
     onSendColor: (Int, Int, Int) -> Unit,
     onBackToHome: () -> Unit,
     modifier: Modifier = Modifier,
@@ -40,6 +46,7 @@ fun ColorsScreen(
     LaunchedEffect(Unit) {
         onReactivarColor()
     }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -58,36 +65,33 @@ fun ColorsScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        Text("Brillo: ${brillo.toInt()}")
+        Text("Brillo: ${brilloColor.toInt()}")
 
         DinoSlider(
-            label = "Brillo General",
-            value = brillo,
+            label = "Brillo",
+            value = brilloColor,
             onValueChange = onBrilloChanged,
             valueRange = 0f..100f,
-            activeTrackColor = Color(0xFFFFD54F),        // ☀️ Ámbar cálido para representar intensidad de luz
-            inactiveTrackColor = SoftPink.copy(alpha = 0.4f), // Tu fondo rosa suave integrado
-            thumbColor = Cream,                          // Botón crema característico de tu UI
+            activeTrackColor = Color(0xFFFFD54F),
+            inactiveTrackColor = SoftPink.copy(alpha = 0.4f),
+            thumbColor = Cream,
             labelColor = Cream,
             valueFormatter = { "${it.toInt()}%" }
         )
 
         Spacer(Modifier.height(12.dp))
 
-        // Caja de previsualización del color actual
-        /*
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(45.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(currentColor)
-        )
-
-        Spacer(Modifier.height(20.dp))
-*/
         Text("Favoritos")
-        Text("Selecciona un color del espectro y luego mantén presionado un cuadro de color por unos segundos. ¡Disfruta tu nuevo color!")
+        Text(
+            "Selecciona un color del espectro y luego mantén presionado " +
+                    "un cuadro de color por unos segundos. ¡Disfruta tu nuevo color!"
+        )
+        Spacer(Modifier.height(1.dp))
+        Text(
+            text = "💡 Sugerencia: Si actualizas el brillo de un color guardado, vuelve a mantener presionado su respectivo cuadro para guardar el nuevo brillo.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
 
         Spacer(Modifier.height(8.dp))
 
@@ -95,17 +99,27 @@ fun ColorsScreen(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             favoritos.forEachIndexed { index, favorito ->
+
                 Box(
                     modifier = Modifier
                         .size(50.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(favorito ?: Color.Gray.copy(alpha = 0.3f))
+                        .background(
+                            favorito.color
+                                ?: Color.Gray.copy(alpha = 0.3f)
+                        )
                         .combinedClickable(
                             onClick = {
-                                favorito?.let { onFavoritoClick(it) }
+                                if (favorito.color != null) {
+                                    onFavoritoClick(favorito)
+                                }
                             },
                             onLongClick = {
-                                onFavoritoLongClick(index, currentColor)
+                                onFavoritoLongClick(
+                                    index,
+                                    currentColor,
+                                    brilloColor
+                                )
                             }
                         )
                 )
@@ -114,7 +128,6 @@ fun ColorsScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // 👈 2. SE PASA AL COLORPICKER
         ColorPicker(
             currentColor = currentColor,
             onColorChanged = onColorChangedInPicker,
@@ -124,7 +137,6 @@ fun ColorsScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // --- PRESETS DE COLOR ---
         DinoButton("Wine") {
             onSendColor(255, 33, 19)
             onColorChangedInPicker(Color(255, 33, 19))
@@ -156,3 +168,4 @@ fun ColorsScreen(
         }
     }
 }
+

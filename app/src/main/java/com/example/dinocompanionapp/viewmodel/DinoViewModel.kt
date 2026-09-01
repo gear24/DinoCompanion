@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.FlowPreview
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.core.content.edit
 import com.example.dinocompanionapp.data.audio.MediaSessionManager
@@ -32,7 +33,6 @@ import kotlinx.coroutines.delay
 import com.example.dinocompanionapp.data.DinoInfo
 import com.example.dinocompanionapp.data.audio.MediaState
 import com.example.dinocompanionapp.data.audio.VolumeManager
-
 
 class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -95,11 +95,12 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- ESTADOS DE COLORSSCREEN ---
 
-    var brillo by mutableFloatStateOf(
-        prefs.getFloat("brillo", 80f)
+    var brilloColor by mutableFloatStateOf(
+        prefs.getFloat("brillo_color", 80f)
     )
         private set
 
+    private val brillosModo = mutableStateMapOf<Int, Float>()
 
     var currentColor by mutableStateOf(
         Color(prefs.getInt("current_color", Color.Red.toArgb()))
@@ -107,23 +108,35 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         private set
 
 
-    val favoritos = mutableStateListOf<Color?>().apply {
+    data class Favorito(
+        val color: Color?,
+        val brillo: Float
+    )
 
-        addAll(List(5) { index ->
-
-            if (prefs.contains("favorito_$index")) {
-
-                Color(
-                    prefs.getInt(
-                        "favorito_$index",
-                        Color.Transparent.toArgb()
+    val favoritos = mutableStateListOf<Favorito>().apply {
+        addAll(
+            List(5) { index ->
+                if (prefs.contains("favorito_${index}_color")) {
+                    Favorito(
+                        color = Color(
+                            prefs.getInt(
+                                "favorito_${index}_color",
+                                Color.Transparent.toArgb()
+                            )
+                        ),
+                        brillo = prefs.getFloat(
+                            "favorito_${index}_brillo",
+                            80f
+                        )
                     )
-                )
-
-            } else {
-                null
+                } else {
+                    Favorito(
+                        color = null,
+                        brillo = 80f
+                    )
+                }
             }
-        })
+        )
     }
 
 
@@ -248,8 +261,17 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
                     bluetoothManager.send(DinoProtocol.BATTERY)
 
                     if (dinoEncendido) {
-                        sendCurrentColor()
-                        bluetoothManager.send("${DinoProtocol.BRIGHTNESS}|${brillo.toInt()}")
+                        when (modoActual) {
+                            0 -> {
+                                sendCurrentColor()
+                            }
+                            99 -> {
+                                reactivarUltimaEscena()
+                            }
+                            else -> {
+                                ejecutarModo(modoActual)
+                            }
+                        }
                     }
                 }
             }
@@ -350,19 +372,62 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 
-    fun updateBrillo(nuevoBrillo: Float) {
+    fun updateBrilloModo(
+        idModo: Int,
+        nuevoBrillo: Float
+    ) {
+        val brillo = nuevoBrillo.coerceIn(0f, 100f)
 
-        brillo = nuevoBrillo
+        brillosModo[idModo] = brillo
 
         prefs.edit {
+            putFloat("brillo_modo_$idModo", brillo)
+        }
 
+        if (modoActual == idModo) {
+            sendBrightness(brillo.toInt())
+        }
+    }
+
+    fun updateBrilloColor(nuevoBrillo: Float) {
+
+        val brillo = nuevoBrillo.coerceIn(0f, 100f)
+
+        brilloColor = brillo
+
+        prefs.edit {
             putFloat(
-                "brillo",
-                nuevoBrillo
+                "brillo_color",
+                brillo
             )
         }
 
-        sendBrightness(nuevoBrillo.toInt())
+        sendBrightness(brillo.toInt())
+    }
+
+    fun brilloModo(idModo: Int): Float {
+        return brillosModo.getOrPut(idModo) {
+            prefs.getFloat("brillo_modo_$idModo", 80f)
+        }
+    }
+
+    private fun getBrilloModo(idModo: Int): Float {
+        return prefs.getFloat(
+            "brillo_modo_$idModo",
+            80f
+        )
+    }
+
+    private fun setBrilloModo(
+        idModo: Int,
+        brillo: Float
+    ) {
+        prefs.edit {
+            putFloat(
+                "brillo_modo_$idModo",
+                brillo
+            )
+        }
     }
 
 
@@ -372,35 +437,43 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         modoActual = 0
 
         prefs.edit {
-
             putBoolean("dino_encendido", true)
             putInt("modo_actual", 0)
         }
 
-
         enviarColorAlESP32(
             currentColor,
             persistir = true
+        )
+
+        sendBrightness(
+            brilloColor.toInt()
         )
     }
 
 
     fun saveOrClearFavorite(
         index: Int,
-        colorAsociado: Color
+        color: Color,
+        brillo: Float
     ) {
+        if (index !in favoritos.indices) return
 
-        if (index in favoritos.indices) {
+        favoritos[index] = Favorito(
+            color = color,
+            brillo = brillo
+        )
 
-            favoritos[index] = colorAsociado
+        prefs.edit {
+            putInt(
+                "favorito_${index}_color",
+                color.toArgb()
+            )
 
-            prefs.edit {
-
-                putInt(
-                    "favorito_$index",
-                    colorAsociado.toArgb()
-                )
-            }
+            putFloat(
+                "favorito_${index}_brillo",
+                brillo
+            )
         }
     }
 
@@ -573,30 +646,15 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         dinoEncendido = true
         animState = true
 
-
-        val brilloInt = brillo
+        val brilloModo = getBrilloModo(idModo)
             .toInt()
             .coerceIn(0, 100)
 
-
         prefs.edit {
-
-            putInt(
-                "modo_actual",
-                idModo
-            )
-
-            putInt(
-                "ultimo_modo_id",
-                idModo
-            )
-
-            putBoolean(
-                "dino_encendido",
-                true
-            )
+            putInt("modo_actual", idModo)
+            putInt("ultimo_modo_id", idModo)
+            putBoolean("dino_encendido", true)
         }
-
 
         viewModelScope.launch {
 
@@ -607,7 +665,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             delay(30.milliseconds)
 
             bluetoothManager.send(
-                "${DinoProtocol.BRIGHTNESS}|$brilloInt"
+                "${DinoProtocol.BRIGHTNESS}|$brilloModo"
             )
         }
     }

@@ -72,7 +72,6 @@ fun ModesScreen(
             valueFormatter = { "${it.toInt()}%" }
         )
 
-
         Spacer(Modifier.height(24.dp))
 
         // Botón de encendido/apagado general del efecto
@@ -112,6 +111,7 @@ fun ModesScreen(
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
+
 
         Spacer(Modifier.height(12.dp))
 
