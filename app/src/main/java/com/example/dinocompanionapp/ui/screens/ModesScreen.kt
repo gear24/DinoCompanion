@@ -17,6 +17,9 @@ import com.example.dinocompanionapp.ui.theme.*
 import androidx.compose.ui.graphics.Color
 import com.example.dinocompanionapp.ui.components.DinoSlider
 
+
+
+
 @Composable
 fun ModesScreen(
     animState: Boolean,       // Indica si hay alguna animación corriendo

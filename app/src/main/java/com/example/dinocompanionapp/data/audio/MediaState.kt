@@ -7,5 +7,7 @@ data class MediaState(
     val album: String = "",
     val duration: Long = 0L,
     val position: Long = 0L,
-    val isPlaying: Boolean = false
+    val isPlaying: Boolean = false,
+    val packageName: String = "",
+    val appName: String = ""
 )

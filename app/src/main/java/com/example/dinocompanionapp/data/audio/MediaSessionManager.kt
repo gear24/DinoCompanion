@@ -53,6 +53,7 @@ class MediaSessionManager(
     private var lastMediaState: MediaState? = null
 
     // --- CALLBACKS ---
+
 // --- CONTROL DEL SERVICIO ---
 
     fun start() {
@@ -115,70 +116,54 @@ class MediaSessionManager(
 // --- SESIONES MULTIMEDIA ---
 // Busca la sesión multimedia con mayor prioridad.
 
+    private fun getAppNameFromPackage(packageName: String): String {
+        return try {
+            val pm = context.packageManager
+            val appInfo = pm.getApplicationInfo(packageName, 0)
+            pm.getApplicationLabel(appInfo).toString()
+        } catch (e: Exception) {
+            packageName // Fallback si no encuentra la app
+        }
+    }
     fun updateMediaSession() {
-
         val component = ComponentName(
             context,
             MediaListenerService::class.java
         )
 
-        val sessions = mediaSessionManager
-            .getActiveSessions(component)
-
-//        Log.d(
-//            "DINO_AUDIO_Media_Session",
-//            "Sesiones activas: ${sessions.size}"
-//        )
-
+        val sessions = mediaSessionManager.getActiveSessions(component)
         val session = sessions.firstOrNull() ?: return
 
         if (currentController != session) {
-
             currentController?.unregisterCallback(controllerCallback)
-
             currentController = session
-
             currentController?.registerCallback(controllerCallback)
         }
+
+        val appPackageName = session.packageName
+        // Convertimos el paquete al nombre de la App visible
+        val appName = getAppNameFromPackage(appPackageName)
 
         val metadata = session.metadata
         val playback = session.playbackState
 
         val media = MediaState(
-
-            title = metadata?.getString(
-                MediaMetadata.METADATA_KEY_TITLE
-            ) ?: "",
-
-            artist = metadata?.getString(
-                MediaMetadata.METADATA_KEY_ARTIST
-            ) ?: "",
-
-            album = metadata?.getString(
-                MediaMetadata.METADATA_KEY_ALBUM
-            ) ?: "",
-
-            duration = metadata?.getLong(
-                MediaMetadata.METADATA_KEY_DURATION
-            ) ?: 0L,
-
+            title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE) ?: "",
+            artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: "",
+            album = metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM) ?: "",
+            duration = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L,
             position = playback?.position ?: 0L,
-
-            isPlaying = playback?.state ==
-                    PlaybackState.STATE_PLAYING
+            isPlaying = playback?.state == PlaybackState.STATE_PLAYING,
+            packageName = appName, // Guardas "Spotify", "YouTube Music", etc.
+            appName = appName
         )
 
-
         if (media != lastMediaState) {
-
             lastMediaState = media
-
-
-
             onMediaChanged?.invoke(media)
         }
-        onMediaChanged?.invoke(media)
     }
+
 }
 
 

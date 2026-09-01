@@ -375,6 +375,16 @@ class MainActivity : ComponentActivity() {
             DinoButton("⛔ Apagar") {
                 viewModel.turnOffDino()
             }
+            DinoButton("Modo 10") {
+                viewModel.modo10()
+            }
+            DinoButton("Modo 11") {
+                viewModel.modo11()
+            }
+
+            DinoButton("Modo 12") {
+                viewModel.modo12()
+            }
 
             if (mostrarNombreDialog) {
                 AlertDialog(

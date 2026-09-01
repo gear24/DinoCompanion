@@ -316,20 +316,14 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 // --- ACCIONES DE ENERGÍA Y CONEXIÓN ---
 
     fun turnOffDino() {
-
         dinoEncendido = false
         animState = false
         modoActual = 0
-
         prefs.edit {
-
             putBoolean("dino_encendido", false)
             putInt("modo_actual", 0)
         }
-
-
         viewModelScope.launch {
-
             bluetoothManager.send("0")
         }
     }
@@ -560,6 +554,17 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         ejecutarModo(6)
     }
 
+    fun modo10() {
+        ejecutarModo(10)
+    }
+
+    fun modo11() {
+        ejecutarModo(11)
+    }
+
+    fun modo12() {
+        ejecutarModo(12)
+    }
 
     private fun ejecutarModo(idModo: Int) {
 
@@ -618,6 +623,8 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             4 -> startArcoiris()
             5 -> startForest()
             6 -> startParty()
+            10 -> modo10()
+            11 -> modo11()
 
             else -> startLava()
         }
@@ -897,16 +904,16 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     private fun configurarMediaSession() {
 
         mediaSessionManager.onMediaChanged = { media ->
-
             mediaState = media
             musicManager.update(media)
 
             viewModelScope.launch {
                 val duracionReloj = media.duration.formatAsTime()
                 val posicionReloj = media.position.formatAsTime()
+                val fuenteApp = media.packageName
                 bluetoothManager.send(
                     DinoProtocol.MUSIC_SONG +
-                            "${media.title}|${media.artist}|$posicionReloj| $duracionReloj"
+                    "${media.title}|${media.artist}|$posicionReloj|$duracionReloj|$fuenteApp"
                 )
             }
 
