@@ -232,9 +232,19 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
 
     private fun procesarMensaje(mensaje: String) {
+
+        if (
+            mensaje.startsWith(DinoProtocol.BATTERY_RESPONSE) ||
+            mensaje.startsWith("BATINFO|")
+        ) {
+            batteryManager.processMessage(mensaje)
+            return
+        }
+
         when {
-            // 1. PRIMERO evaluamos los mensajes específicos (como ACK|HELLO o HELLO_RESPONSE)
-            mensaje.contains("HELLO") || mensaje.startsWith(DinoProtocol.HELLO_RESPONSE) -> {
+            mensaje.contains("HELLO") ||
+                    mensaje.startsWith(DinoProtocol.HELLO_RESPONSE) -> {
+
                 Log.d("DINO_ESP32", "Firmware iniciado: $mensaje")
 
                 viewModelScope.launch {
@@ -242,79 +252,36 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
                     if (dinoEncendido) {
                         when (modoActual) {
-                            0 -> {
-                                sendCurrentColor()
-                            }
-                            99 -> {
-                                reactivarUltimaEscena()
-                            }
-                            else -> {
-                                ejecutarModo(modoActual)
-                            }
+                            0 -> sendCurrentColor()
+                            99 -> reactivarUltimaEscena()
+                            else -> ejecutarModo(modoActual)
                         }
                     }
                 }
             }
 
-            // 2. DESPUÉS el ACK genérico para cualquier otro comando
             mensaje.startsWith(DinoProtocol.ACK) -> {
                 Log.d("DINO_ESP32", mensaje)
             }
 
-            mensaje.startsWith(DinoProtocol.INFO) -> Log.d("DINO_ESP32", mensaje)
-            mensaje.startsWith(DinoProtocol.ERROR) -> Log.e("DINO_ESP32", mensaje)
-
-            mensaje.startsWith(DinoProtocol.BATTERY_RESPONSE) -> {
-                val partes = mensaje.split("|")
-                val porcentaje = partes.getOrNull(1)?.toIntOrNull()
-
-                if (porcentaje != null) {
-                    bateria = porcentaje
-
-                    estadoBateria = when {
-                        porcentaje <= 10 -> "¡Carga a Dino!"
-                        porcentaje <= 20 -> "Batería baja"
-                        else -> "Normal"
-                    }
-
-                    // Si el ESP32 mandó todo en una sola trama de 4 partes:
-                    val rawDirecto = partes.getOrNull(2)?.toIntOrNull()
-                    val voltajeDirecto = partes.getOrNull(3)?.toFloatOrNull()
-
-                    if (rawDirecto != null && voltajeDirecto != null) {
-                        ultimoRaw = rawDirecto
-                        ultimoVoltaje = voltajeDirecto
-                    }
-
-                    Log.d(
-                        "DINO_BATTERY",
-                        "Batería recibida: $porcentaje% | RAW: ${ultimoRaw ?: "esperando..."} | BAT: ${ultimoVoltaje?.let { "${it}V" } ?: "esperando..."} | Estado: $estadoBateria"
-                    )
-                }
+            mensaje.startsWith(DinoProtocol.INFO) -> {
+                Log.d("DINO_ESP32", mensaje)
             }
 
-            mensaje.startsWith("BATINFO|") -> {
-                val partes = mensaje.split("|")
-                val raw = partes.getOrNull(1)?.toIntOrNull()
-                val voltaje = partes.getOrNull(2)?.toFloatOrNull()
-
-                if (raw != null && voltaje != null) {
-                    ultimoRaw = raw
-                    ultimoVoltaje = voltaje
-                    Log.d("DINO_BATTERY", "RAW: $raw | BAT: ${voltaje}V")
-                }
+            mensaje.startsWith(DinoProtocol.ERROR) -> {
+                Log.e("DINO_ESP32", mensaje)
             }
 
-            else -> Log.d("DINO_ESP32", mensaje)
+            else -> {
+                Log.d("DINO_ESP32", mensaje)
+            }
         }
     }
-
 
     private fun procesarMensajeESP32(mensaje: String) {
         procesarMensaje(mensaje)
     }
-
-
+    
     // --- ACCIONES DE ENERGÍA Y CONEXIÓN ---
 
     fun turnOffDino() {
@@ -476,8 +443,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             persistir = false
         )
     }
-
-
     fun sendColorFinal(
         red: Int,
         green: Int,
@@ -490,7 +455,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             color.toArgb(),
             hsv
         )
-
         Log.d(
             "DINO_COLOR_DEBUG",
             "✅ FINAL - H: ${hsv[0].toInt()}°, S: ${(hsv[1] * 100).toInt()}%, V: ${(hsv[2] * 100).toInt()}%"
@@ -502,43 +466,30 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-
     // --- ACCIONES DE MODOS ---
 
     fun startLava() {
         ejecutarModo(3)
     }
-
-
     fun startArcoiris() {
         ejecutarModo(4)
     }
-
-
     fun startRespirar() {
         ejecutarModo(1)
     }
-
-
     fun startOcean() {
         ejecutarModo(2)
     }
-
-
     fun startForest() {
         ejecutarModo(5)
     }
-
-
     fun startParty() {
         ejecutarModo(6)
     }
 
-
     fun modo10() {
         ejecutarModo(10)
     }
-
 
     fun modo11() {
         ejecutarModo(11)
@@ -548,7 +499,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     fun modo12() {
         ejecutarModo(12)
     }
-
 
     private fun ejecutarModo(idModo: Int) {
         modoActual = idModo
@@ -576,7 +526,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     fun reactivarUltimoModo() {
         when (ultimoModoId) {
             1 -> startRespirar()
@@ -592,18 +541,15 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     fun stopAnimation() {
         animState = false
         turnOffDino()
     }
 
-
     // --- ACCIONES DE ESCENAS ---
 
     private var estadoPrevioModo: Int = 0
     private var escenaPrevia: Escena? = null
-
 
     fun iniciarLiveScene(escenaEnEdicion: Escena? = null) {
         estadoPrevioModo = modoActual
@@ -617,7 +563,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
                 null
             }
     }
-
 
     fun previewEscenaEnVivo(escenaTemporal: Escena) {
         dinoEncendido = true
@@ -651,7 +596,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     fun previewBrilloEscena(brillo: Int) {
         viewModelScope.launch {
             bluetoothManager.send(
@@ -659,7 +603,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
     }
-
 
     fun cancelarEdicionEscena() {
         viewModelScope.launch {
@@ -678,7 +621,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             escenaPrevia = null
         }
     }
-
 
     fun aplicarEscena(escena: Escena) {
         dinoEncendido = true
@@ -716,7 +658,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     // Función para reactivar la última escena si entramos estando apagados
     fun reactivarUltimaEscena() {
         if (ultimaEscenaId != -1L) {
@@ -731,7 +672,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     fun guardarNuevaEscena(
         escena: Escena,
         esEdicion: Boolean
@@ -745,14 +685,11 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         cargarEscenasLocales()
     }
 
-
     fun borrarEscena(id: Long) {
         repository.eliminarEscena(appContext, id)
         cargarEscenasLocales()
     }
 
-
-    // -- Administracion de audio
 
     // -- Personalizacion
     suspend fun changeDinoName(name: String) {
@@ -761,13 +698,11 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-
     suspend fun restartDino() {
         bluetoothManager.send(
             DinoProtocol.RESTART
         )
     }
-
 
     fun cambiarNombreDesdeUI(nombre: String) {
         viewModelScope.launch {
@@ -783,7 +718,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     // --- CONFIGURACIÓN de sonido---
     fun Long.formatAsTime(): String {
         val totalSegundos = this / 1000
@@ -792,16 +726,14 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         return String.format("%02d:%02d", minutos, segundos)
     }
 
-
     private fun configurarMediaSession() {
-        mediaSessionManager.onMediaChanged = { media ->
-            mediaState = media
-            musicManager.update(media)
 
+        musicManager.onSongChanged = { media ->
             viewModelScope.launch {
                 val duracionReloj = media.duration.formatAsTime()
                 val posicionReloj = media.position.formatAsTime()
                 val fuenteApp = media.packageName
+
                 bluetoothManager.send(
                     DinoProtocol.MUSIC_SONG +
                             "${media.title}|${media.artist}|$posicionReloj|$duracionReloj|$fuenteApp"
@@ -809,28 +741,27 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        mediaSessionManager.onPlaybackChanged = { playing ->
+        musicManager.onPlaybackChanged = { playing ->
             viewModelScope.launch {
                 if (playing) {
-                    bluetoothManager.send(
-                        DinoProtocol.MUSIC_PLAY
-                    )
+                    bluetoothManager.send(DinoProtocol.MUSIC_PLAY)
                 } else {
-                    bluetoothManager.send(
-                        DinoProtocol.MUSIC_PAUSE
-                    )
+                    bluetoothManager.send(DinoProtocol.MUSIC_PAUSE)
                 }
             }
+        }
+
+        mediaSessionManager.onMediaChanged = { media ->
+            mediaState = media
+            musicManager.update(media)
         }
 
         mediaSessionManager.start()
     }
 
-
     fun hasAudioPermission(): Boolean {
         return mediaSessionManager.hasNotificationAccess()
     }
-
 
     fun requestAudioPermission() {
         mediaSessionManager.requestNotificationAccess()
