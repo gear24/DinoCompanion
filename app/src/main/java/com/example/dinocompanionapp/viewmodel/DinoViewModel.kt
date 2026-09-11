@@ -223,6 +223,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             SceneManager.cargarTodasLasEscenas(appContext)
         )
     }
+    
 
 
     private fun procesarMensaje(mensaje: String) {

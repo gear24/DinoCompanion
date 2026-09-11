@@ -2,7 +2,8 @@ package com.example.dinocompanionapp.repository
 
 import android.content.Context
 import androidx.core.content.edit
-
+import com.example.dinocompanionapp.data.Escena
+import com.example.dinocompanionapp.data.SceneManager
 class DinoRepository(context: Context) {
 
     private val prefs = context.getSharedPreferences(
@@ -123,5 +124,31 @@ class DinoRepository(context: Context) {
             putInt("favorito_${index}_color", color)
             putFloat("favorito_${index}_brillo", brillo)
         }
+    }
+
+    // --- ESCENAS ---
+
+    fun cargarTodasLasEscenas(context: Context): List<Escena> =
+        SceneManager.cargarTodasLasEscenas(context)
+
+    fun agregarEscena(
+        context: Context,
+        escena: Escena
+    ) {
+        SceneManager.agregarEscena(context, escena)
+    }
+
+    fun actualizarEscena(
+        context: Context,
+        escena: Escena
+    ) {
+        SceneManager.actualizarEscena(context, escena)
+    }
+
+    fun eliminarEscena(
+        context: Context,
+        id: Long
+    ) {
+        SceneManager.eliminarEscena(context, id)
     }
 }
