@@ -55,4 +55,8 @@ class MusicManager {
 
         lastMedia = media
     }
+
+    fun reset() {
+        lastMedia = null
+    }
 }

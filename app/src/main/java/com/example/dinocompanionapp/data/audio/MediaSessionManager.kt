@@ -61,19 +61,23 @@ class MediaSessionManager(
 
         MediaListenerService.onSessionChanged = {
             Log.d("DINO_AUDIO_DEBUG", "onSessionChanged")
-            actualizarSesion()
+            updateMediaSession()
         }
 
         if (hasNotificationAccess()) {
-            actualizarSesion()
+            updateMediaSession()
         }
     }
 
+    fun stop() {
+        currentController?.unregisterCallback(controllerCallback)
+        currentController = null
 
-    // --- SESIÓN MULTIMEDIA ---
-    private fun actualizarSesion() {
-        updateMediaSession()
+        MediaListenerService.onSessionChanged = null
+
+        lastMediaState = null
     }
+
 
     // --- PERMISOS ---
 // Comprueba si la app tiene acceso a las sesiones multimedia.

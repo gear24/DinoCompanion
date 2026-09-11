@@ -25,6 +25,7 @@ import com.example.dinocompanionapp.data.audio.MediaSessionManager
 import com.example.dinocompanionapp.data.audio.MediaState
 import com.example.dinocompanionapp.data.audio.MusicManager
 import com.example.dinocompanionapp.data.audio.VolumeManager
+import com.example.dinocompanionapp.data.battery.BatteryManager
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -70,10 +71,16 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     var ultimoRaw by mutableStateOf<Int?>(null)
     var ultimoVoltaje by mutableStateOf<Float?>(null)
 
+    private val batteryManager = BatteryManager(bluetoothManager)
+
     // --- ESTADOS DE HOME / GLOBAL ---
+
+
+
 
     var bateria by mutableIntStateOf(-1)
         private set
+
 
     var estadoBateria by mutableStateOf("Normal")
         private set
@@ -152,12 +159,12 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     init {
         bluetoothManager.updateDeviceName(dinoName)
         configurarBluetooth()
+        configurarBateria()
         configurarMediaSession()
         cargarEscenasLocales()
         iniciarProcesadorDeColores()
         intentarAutoConexion()
         configurarVolumen()
-        iniciarActualizacionBateria()
     }
 
 
@@ -204,17 +211,15 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 
-    private fun iniciarActualizacionBateria() {
-        viewModelScope.launch {
-            while (true) {
-                // Pide batería de inmediato si está conectado
-                if (bluetoothManager.isConnected()) {
-                    bluetoothManager.send(DinoProtocol.BATTERY)
-                }
-                // Luego espera los 60 segundos para la próxima comprobación
-                delay(60_000)
-            }
+    private fun configurarBateria() {
+        batteryManager.onBatteryChanged = { battery ->
+            bateria = battery.porcentaje
+            estadoBateria = battery.estado
+            ultimoRaw = battery.raw
+            ultimoVoltaje = battery.voltaje
         }
+
+        batteryManager.start()
     }
 
 

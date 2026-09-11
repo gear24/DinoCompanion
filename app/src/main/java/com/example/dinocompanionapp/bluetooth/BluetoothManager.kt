@@ -66,10 +66,7 @@ class BluetoothManager(
             BtState.RECONNECTING -> "🟠 Reconectando..."
             BtState.ERROR -> "❌ Error"
         }
-    private val prefs = context.getSharedPreferences(
-        "dino_settings",
-        Context.MODE_PRIVATE
-    )
+
 
     private var deviceName = "Papas"
 

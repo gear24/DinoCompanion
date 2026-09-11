@@ -17,7 +17,7 @@ class VolumeManager(
 
     private val audioManager =
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-
+    private var volumeObserver: ContentObserver? = null
     fun getVolumePercent(): Int {
 
         val current =
@@ -32,23 +32,33 @@ class VolumeManager(
     fun start() {
         Log.d("DINO_VOLUME", "Iniciando VolumeManager")
 
+        volumeObserver = object : ContentObserver(
+            Handler(Looper.getMainLooper())
+        ) {
+            override fun onChange(selfChange: Boolean) {
+                val volume = getVolumePercent()
+
+                if (volume != lastVolume) {
+                    lastVolume = volume
+
+                    Log.d("DINO_VOLUME", "$volume%")
+                    onVolumeChanged?.invoke(volume)
+                }
+            }
+        }
+
         context.contentResolver.registerContentObserver(
             Settings.System.CONTENT_URI,
             true,
-            object : ContentObserver(Handler(Looper.getMainLooper())) {
-
-                override fun onChange(selfChange: Boolean) {
-
-                    val volume = getVolumePercent()
-
-                    if (volume != lastVolume) {
-                        lastVolume = volume
-
-                        Log.d("DINO_VOLUME", "$volume%")
-                        onVolumeChanged?.invoke(volume)
-                    }
-                }
-            }
+            volumeObserver!!
         )
+    }
+
+    fun stop() {
+        volumeObserver?.let {
+            context.contentResolver.unregisterContentObserver(it)
+        }
+
+        volumeObserver = null
     }
 }
