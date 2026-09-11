@@ -21,7 +21,6 @@ import com.example.dinocompanionapp.data.BtState
 import com.example.dinocompanionapp.data.DinoInfo
 import com.example.dinocompanionapp.data.DinoProtocol
 import com.example.dinocompanionapp.data.Escena
-import com.example.dinocompanionapp.data.SceneManager
 import com.example.dinocompanionapp.data.audio.MediaSessionManager
 import com.example.dinocompanionapp.data.audio.MediaState
 import com.example.dinocompanionapp.data.audio.MusicManager
@@ -35,6 +34,8 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 //
 import com.example.dinocompanionapp.repository.DinoRepository
+
+
 class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
     private val appContext = application.applicationContext
@@ -220,10 +221,9 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     fun cargarEscenasLocales() {
         listaEscenas.clear()
         listaEscenas.addAll(
-            SceneManager.cargarTodasLasEscenas(appContext)
+            repository.cargarTodasLasEscenas(appContext)
         )
     }
-    
 
 
     private fun procesarMensaje(mensaje: String) {
@@ -732,15 +732,9 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         esEdicion: Boolean
     ) {
         if (!esEdicion) {
-            SceneManager.agregarEscena(
-                appContext,
-                escena
-            )
+            repository.agregarEscena(appContext, escena)
         } else {
-            SceneManager.actualizarEscena(
-                appContext,
-                escena
-            )
+            repository.actualizarEscena(appContext, escena)
         }
 
         cargarEscenasLocales()
@@ -748,11 +742,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
 
     fun borrarEscena(id: Long) {
-        SceneManager.eliminarEscena(
-            appContext,
-            id
-        )
-
+        repository.eliminarEscena(appContext, id)
         cargarEscenasLocales()
     }
 
