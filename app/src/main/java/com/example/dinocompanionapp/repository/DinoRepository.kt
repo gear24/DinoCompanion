@@ -3,7 +3,6 @@ package com.example.dinocompanionapp.repository
 import android.content.Context
 import androidx.core.content.edit
 import com.example.dinocompanionapp.data.Escena
-import com.example.dinocompanionapp.data.SceneManager
 import com.example.dinocompanionapp.data.EfectoEscena
 
 
