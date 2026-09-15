@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
+
 //
 import com.example.dinocompanionapp.repository.DinoRepository
 
@@ -226,7 +227,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     fun cargarEscenasLocales() {
         listaEscenas.clear()
         listaEscenas.addAll(
-            repository.cargarTodasLasEscenas(appContext)
+            repository.cargarTodasLasEscenas()
         )
     }
 
@@ -281,7 +282,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     private fun procesarMensajeESP32(mensaje: String) {
         procesarMensaje(mensaje)
     }
-    
+
     // --- ACCIONES DE ENERGÍA Y CONEXIÓN ---
 
     fun turnOffDino() {
@@ -677,16 +678,17 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         esEdicion: Boolean
     ) {
         if (!esEdicion) {
-            repository.agregarEscena(appContext, escena)
+            repository.agregarEscena(escena)
         } else {
-            repository.actualizarEscena(appContext, escena)
+            repository.actualizarEscena( escena)
         }
 
         cargarEscenasLocales()
     }
 
     fun borrarEscena(id: Long) {
-        repository.eliminarEscena(appContext, id)
+        repository.eliminarEscena( id)
+
         cargarEscenasLocales()
     }
 
