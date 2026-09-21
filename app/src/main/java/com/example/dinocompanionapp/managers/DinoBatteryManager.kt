@@ -1,17 +1,23 @@
-package com.example.dinocompanionapp.data.battery
+package com.example.dinocompanionapp.managers
 
+
+import android.util.Log
 import com.example.dinocompanionapp.bluetooth.BluetoothManager
 import com.example.dinocompanionapp.data.DinoProtocol
 import kotlinx.coroutines.*
 import kotlin.time.Duration.Companion.seconds
+import com.example.dinocompanionapp.data.BatteryState
 
 class BatteryManager(
     private val bluetoothManager: BluetoothManager
+
 ) {
 
     private val scope = CoroutineScope(
         SupervisorJob() + Dispatchers.IO
     )
+    private var ultimoPorcentaje = -1
+    private var ultimoEstado = "Normal"
 
     var onBatteryChanged: ((BatteryState) -> Unit)? = null
 
@@ -28,16 +34,19 @@ class BatteryManager(
     }
 
     fun processMessage(mensaje: String) {
+        Log.d("DINO_BATTERY", "📥 Mensaje recibido: $mensaje")
+
         when {
             mensaje.startsWith(DinoProtocol.BATTERY_RESPONSE) -> {
-                val partes = mensaje.split("|")
-                val porcentaje = partes.getOrNull(1)?.toIntOrNull()
+                val porcentaje = mensaje
+                    .split("|")
+                    .getOrNull(1)
+                    ?.toIntOrNull()
                     ?: return
 
-                val raw = partes.getOrNull(2)?.toIntOrNull()
-                val voltaje = partes.getOrNull(3)?.toFloatOrNull()
+                ultimoPorcentaje = porcentaje
 
-                val estado = when {
+                ultimoEstado = when {
                     porcentaje <= 10 -> "¡Carga a Dino!"
                     porcentaje <= 20 -> "Batería baja"
                     else -> "Normal"
@@ -45,11 +54,14 @@ class BatteryManager(
 
                 onBatteryChanged?.invoke(
                     BatteryState(
-                        porcentaje = porcentaje,
-                        estado = estado,
-                        raw = raw,
-                        voltaje = voltaje
+                        porcentaje = ultimoPorcentaje,
+                        estado = ultimoEstado
                     )
+                )
+
+                Log.d(
+                    "DINO_BATTERY",
+                    "🔋 $ultimoPorcentaje%"
                 )
             }
 
@@ -61,12 +73,32 @@ class BatteryManager(
                 if (raw != null && voltaje != null) {
                     onBatteryChanged?.invoke(
                         BatteryState(
+                            porcentaje = ultimoPorcentaje,
+                            estado = ultimoEstado,
                             raw = raw,
                             voltaje = voltaje
                         )
                     )
+
+                    Log.d(
+                        "DINO_BATTERY",
+                        "🔋 $ultimoPorcentaje% | raw=$raw | voltaje=$voltaje"
+                    )
                 }
             }
         }
+    }
+
+    fun clearBattery() {
+        ultimoPorcentaje = -1
+        ultimoEstado = "Sin conexión"
+
+        onBatteryChanged?.invoke(
+            BatteryState(
+                porcentaje = -1,
+                estado = "Sin conexión",
+                disponible = false
+            )
+        )
     }
 }

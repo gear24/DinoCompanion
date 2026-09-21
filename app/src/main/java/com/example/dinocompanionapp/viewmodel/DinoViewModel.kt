@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.AndroidViewModel
@@ -23,7 +24,7 @@ import com.example.dinocompanionapp.data.audio.MediaSessionManager
 import com.example.dinocompanionapp.data.audio.MediaState
 import com.example.dinocompanionapp.data.audio.MusicManager
 import com.example.dinocompanionapp.data.audio.VolumeManager
-import com.example.dinocompanionapp.data.battery.BatteryManager
+import com.example.dinocompanionapp.managers.BatteryManager
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -35,6 +36,7 @@ import com.example.dinocompanionapp.managers.DinoLightingManager
 import com.example.dinocompanionapp.managers.DinoModeManager
 //
 import com.example.dinocompanionapp.repository.DinoRepository
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 
 class DinoViewModel(application: Application) : AndroidViewModel(application) {
@@ -182,6 +184,8 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         iniciarProcesadorDeColores()
         intentarAutoConexion()
         configurarVolumen()
+        observarEstadoBluetooth()
+
     }
 
 
@@ -224,6 +228,8 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
         bluetoothManager.onConnectionLost = {
             animState = false
+            batteryManager.clearBattery()
+
         }
     }
 
@@ -237,6 +243,18 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         batteryManager.start()
+    }
+
+    private fun observarEstadoBluetooth() {
+        viewModelScope.launch {
+            snapshotFlow { bluetoothManager.state }
+                .distinctUntilChanged()
+                .collect { state ->
+                    if (state != BtState.CONNECTED) {
+                        batteryManager.clearBattery()
+                    }
+                }
+        }
     }
 
 
