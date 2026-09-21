@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 import com.example.dinocompanionapp.managers.DinoLightingManager
+import com.example.dinocompanionapp.managers.DinoModeManager
 //
 import com.example.dinocompanionapp.repository.DinoRepository
 
@@ -59,6 +60,16 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         bluetoothManager = bluetoothManager,
         repository = repository,
         scope = viewModelScope
+    )
+    private val modeManager = DinoModeManager(
+        bluetoothManager = bluetoothManager,
+        repository = repository,
+        lightingManager = lightingManager,
+        scope = viewModelScope,
+        onModoActualChanged = { modoActual = it },
+        onUltimoModoChanged = { ultimoModoId = it },
+        onDinoEncendidoChanged = { dinoEncendido = it },
+        onAnimStateChanged = { animState = it }
     )
 
     // Guardar el ID de la última escena seleccionada
@@ -260,7 +271,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
                         when (modoActual) {
                             0 -> sendCurrentColor()
                             99 -> reactivarUltimaEscena()
-                            else -> ejecutarModo(modoActual)
+                            else -> modeManager.ejecutarModo(modoActual)
                         }
                     }
                 }
@@ -472,84 +483,23 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- ACCIONES DE MODOS ---
-
-    fun startLava() {
-        ejecutarModo(3)
-    }
-    fun startArcoiris() {
-        ejecutarModo(4)
-    }
-    fun startRespirar() {
-        ejecutarModo(1)
-    }
-    fun startOcean() {
-        ejecutarModo(2)
-    }
-    fun startForest() {
-        ejecutarModo(5)
-    }
-    fun startParty() {
-        ejecutarModo(6)
-    }
-
-    fun modo10() {
-        ejecutarModo(10)
-    }
-
-    fun modo11() {
-        ejecutarModo(11)
-    }
-
-
-    fun modo12() {
-        ejecutarModo(12)
-    }
-
-    private fun ejecutarModo(idModo: Int) {
-        modoActual = idModo
-        ultimoModoId = idModo
-        dinoEncendido = true
-        animState = true
-
-        val brilloModo = repository.getBrilloModo(idModo)
-            .toInt()
-            .coerceIn(0, 100)
-        repository.saveModoActual(idModo)
-        repository.saveUltimoModoId(idModo)
-        repository.saveDinoEncendido(true)
-
-        viewModelScope.launch {
-            bluetoothManager.send(
-                idModo.toString()
-            )
-
-            delay(30.milliseconds)
-
-            bluetoothManager.send(
-                "${DinoProtocol.BRIGHTNESS}|$brilloModo"
-            )
-        }
-    }
-
+    fun startLava() = modeManager.ejecutarModo(3)
+    fun startArcoiris() = modeManager.ejecutarModo(4)
+    fun startRespirar() = modeManager.ejecutarModo(1)
+    fun startOcean() = modeManager.ejecutarModo(2)
+    fun startForest() = modeManager.ejecutarModo(5)
+    fun startParty() = modeManager.ejecutarModo(6)
+    fun modo10() = modeManager.ejecutarModo(10)
+    fun modo11() = modeManager.ejecutarModo(11)
+    fun modo12() = modeManager.ejecutarModo(12)
     fun reactivarUltimoModo() {
-        when (ultimoModoId) {
-            1 -> startRespirar()
-            2 -> startOcean()
-            3 -> startLava()
-            4 -> startArcoiris()
-            5 -> startForest()
-            6 -> startParty()
-            10 -> modo10()
-            11 -> modo11()
-
-            else -> startLava()
-        }
+        modeManager.reactivarUltimoModo(ultimoModoId)
     }
-
     fun stopAnimation() {
         animState = false
         turnOffDino()
     }
+
 
     // --- ACCIONES DE ESCENAS ---
 
@@ -619,7 +569,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
                 if (estadoPrevioModo == 0) {
                     sendCurrentColor()
                 } else {
-                    ejecutarModo(estadoPrevioModo)
+                    modeManager.ejecutarModo(estadoPrevioModo)
                 }
             }
 
