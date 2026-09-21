@@ -1,7 +1,6 @@
 package com.example.dinocompanionapp.viewmodel
 
 import android.app.Application
-import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -13,7 +12,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dinocompanionapp.bluetooth.BluetoothManager
@@ -33,7 +31,7 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
-
+import com.example.dinocompanionapp.managers.DinoLightingManager
 //
 import com.example.dinocompanionapp.repository.DinoRepository
 
@@ -42,6 +40,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
     private val appContext = application.applicationContext
     private val repository = DinoRepository(appContext)
+
 
     // 1. Canal con estrategia CONFLATED para los colores en movimiento
     private val colorStreamChannel = Channel<Color>(Channel.CONFLATED)
@@ -55,6 +54,12 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
     val bluetoothManager = BluetoothManager(appContext)
     val mediaSessionManager = MediaSessionManager(appContext)
+
+    private val lightingManager = DinoLightingManager(
+        bluetoothManager = bluetoothManager,
+        repository = repository,
+        scope = viewModelScope
+    )
 
     // Guardar el ID de la última escena seleccionada
     var ultimaEscenaId by mutableLongStateOf(
@@ -310,6 +315,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 
+
     fun updateBrilloModo(
         idModo: Int,
         nuevoBrillo: Float
@@ -323,11 +329,12 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 
+
+
     fun updateBrilloColor(nuevoBrillo: Float) {
         val brillo = nuevoBrillo.coerceIn(0f, 100f)
         brilloColor = brillo
-        repository.saveBrilloColor(brillo)
-        sendBrightness(brillo.toInt())
+        lightingManager.updateBrilloColor(brillo)
     }
 
 
@@ -376,12 +383,9 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 
+
     fun sendBrightness(value: Int) {
-        viewModelScope.launch {
-            bluetoothManager.send(
-                "${DinoProtocol.BRIGHTNESS}|$value"
-            )
-        }
+        lightingManager.sendBrightness(value)
     }
 
 
