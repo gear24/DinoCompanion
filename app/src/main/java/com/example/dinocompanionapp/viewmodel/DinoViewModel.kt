@@ -24,7 +24,7 @@ import com.example.dinocompanionapp.data.audio.MediaSessionManager
 import com.example.dinocompanionapp.data.audio.MediaState
 import com.example.dinocompanionapp.data.audio.MusicManager
 import com.example.dinocompanionapp.data.audio.VolumeManager
-import com.example.dinocompanionapp.managers.BatteryManager
+import com.example.dinocompanionapp.managers.DinoBatteryManager
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 import com.example.dinocompanionapp.managers.DinoLightingManager
 import com.example.dinocompanionapp.managers.DinoModeManager
+import com.example.dinocompanionapp.managers.DinoSceneManager
 //
 import com.example.dinocompanionapp.repository.DinoRepository
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -73,6 +74,16 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         onDinoEncendidoChanged = { dinoEncendido = it },
         onAnimStateChanged = { animState = it }
     )
+    private val sceneManager = DinoSceneManager(
+        bluetoothManager = bluetoothManager,
+        scope = viewModelScope,
+        onDinoEncendidoChanged = { dinoEncendido = it },
+        onModoActualChanged = { modoActual = it },
+        onUltimaEscenaChanged = {
+            ultimaEscenaId = it
+            repository.saveUltimaEscenaId(it)
+        }
+    )
 
     // Guardar el ID de la última escena seleccionada
     var ultimaEscenaId by mutableLongStateOf(
@@ -90,7 +101,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     var ultimoRaw by mutableStateOf<Int?>(null)
     var ultimoVoltaje by mutableStateOf<Float?>(null)
 
-    private val batteryManager = BatteryManager(bluetoothManager)
+    private val batteryManager = DinoBatteryManager(bluetoothManager)
 
     // --- ESTADOS DE HOME / GLOBAL ---
 
@@ -538,43 +549,11 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun previewEscenaEnVivo(escenaTemporal: Escena) {
-        dinoEncendido = true
-
-        val cantColores = escenaTemporal.colores.size
-
-        val stringEscena = StringBuilder(
-            "${DinoProtocol.SCENE}|${escenaTemporal.efecto.codigo}|${escenaTemporal.velocidad}|$cantColores"
-        )
-
-        escenaTemporal.colores.forEach { colorArgb ->
-            val color = Color(colorArgb)
-
-            val r = (color.red * 255).toInt()
-            val g = (color.green * 255).toInt()
-            val b = (color.blue * 255).toInt()
-
-            stringEscena.append("|$r|$g|$b")
-        }
-
-        viewModelScope.launch {
-            bluetoothManager.send(
-                "${DinoProtocol.BRIGHTNESS}|${escenaTemporal.brillo}"
-            )
-
-            delay(20.milliseconds)
-
-            bluetoothManager.send(
-                stringEscena.toString()
-            )
-        }
+        sceneManager.previewEscena(escenaTemporal)
     }
 
     fun previewBrilloEscena(brillo: Int) {
-        viewModelScope.launch {
-            bluetoothManager.send(
-                "${DinoProtocol.BRIGHTNESS}|$brillo"
-            )
-        }
+        sceneManager.previewBrillo(brillo)
     }
 
     fun cancelarEdicionEscena() {
@@ -596,39 +575,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun aplicarEscena(escena: Escena) {
-        dinoEncendido = true
-        modoActual = 99
-        ultimaEscenaId = escena.id
-
-        repository.saveDinoEncendido(true)
-        repository.saveModoActual(99)
-        repository.saveUltimaEscenaId(escena.id)
-
-        val cantColores = escena.colores.size
-
-        val stringEscena = StringBuilder(
-            "${DinoProtocol.SCENE}|${escena.efecto.codigo}|${escena.velocidad}|$cantColores"
-        )
-
-        escena.colores.forEach { colorArgb ->
-            val color = Color(colorArgb)
-
-            val r = (color.red * 255).toInt()
-            val g = (color.green * 255).toInt()
-            val b = (color.blue * 255).toInt()
-
-            stringEscena.append("|$r|$g|$b")
-        }
-
-        viewModelScope.launch {
-            bluetoothManager.send(
-                "${DinoProtocol.BRIGHTNESS}|${escena.brillo}"
-            )
-
-            bluetoothManager.send(
-                stringEscena.toString()
-            )
-        }
+        sceneManager.aplicarEscena(escena)
     }
 
     // Función para reactivar la última escena si entramos estando apagados

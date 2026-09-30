@@ -8,7 +8,7 @@ import kotlinx.coroutines.*
 import kotlin.time.Duration.Companion.seconds
 import com.example.dinocompanionapp.data.BatteryState
 
-class BatteryManager(
+class DinoBatteryManager(
     private val bluetoothManager: BluetoothManager
 
 ) {
@@ -55,7 +55,9 @@ class BatteryManager(
                 onBatteryChanged?.invoke(
                     BatteryState(
                         porcentaje = ultimoPorcentaje,
-                        estado = ultimoEstado
+                        estado = ultimoEstado,
+                        disponible = true
+
                     )
                 )
 
@@ -76,7 +78,9 @@ class BatteryManager(
                             porcentaje = ultimoPorcentaje,
                             estado = ultimoEstado,
                             raw = raw,
-                            voltaje = voltaje
+                            voltaje = voltaje,
+                            disponible = true
+
                         )
                     )
 
