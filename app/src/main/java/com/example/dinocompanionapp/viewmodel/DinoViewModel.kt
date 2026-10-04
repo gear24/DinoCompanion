@@ -366,6 +366,16 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun actualizarDinoEncendido(encendido: Boolean) {
+        dinoEncendido = encendido
+        repository.saveDinoEncendido(encendido)
+    }
+
+    fun actualizarModoActual(modo: Int) {
+        modoActual = modo
+        repository.saveModoActual(modo)
+    }
+
     fun updateBrilloColor(nuevoBrillo: Float) {
         val brillo = nuevoBrillo.coerceIn(0f, 100f)
         brilloColor = brillo

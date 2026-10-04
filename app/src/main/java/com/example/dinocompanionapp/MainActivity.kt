@@ -55,6 +55,9 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.dinocompanionapp.viewmodel.DinoColorsViewModel
+import com.example.dinocompanionapp.viewmodel.DinoColorsViewModelFactory
 
 
 /*
@@ -67,12 +70,23 @@ class MainActivity : ComponentActivity() {
 
     private val dinoViewModel: DinoViewModel by viewModels()
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
 
         setContent {
+            val colorsViewModel: DinoColorsViewModel = viewModel(
+                factory = DinoColorsViewModelFactory(
+                    application = application,
+                    bluetoothManager = dinoViewModel.bluetoothManager,
+                    onDinoEncendidoChanged = { encendido ->
+                        dinoViewModel.actualizarDinoEncendido(encendido)
+                    },
+                    onModoActualChanged = { modo ->
+                        dinoViewModel.actualizarModoActual(modo)
+                    }
+                )
+            )
             DinoCompanionAppTheme {
                 var pantalla by remember { mutableStateOf("home") }
 
@@ -93,38 +107,38 @@ class MainActivity : ComponentActivity() {
 
                         "colors" -> {
                             ColorsScreen(
-                                currentColor = dinoViewModel.currentColor,
-                                brilloColor = dinoViewModel.brilloColor,
-                                favoritos = dinoViewModel.favoritos,
+                                currentColor = colorsViewModel.currentColor,
+                                brilloColor = colorsViewModel.brilloColor,
+                                favoritos = colorsViewModel.favoritos,
 
                                 onColorChangedInPicker = { color ->
-                                    dinoViewModel.updateCurrentColor(color)
+                                    colorsViewModel.updateCurrentColor(color)
                                 },
 
                                 onColorStream = { color ->
-                                    dinoViewModel.streamColorLive(color)
+                                    colorsViewModel.streamColorLive(color)
                                 },
 
                                 onBrilloChanged = { nuevoBrillo ->
-                                    dinoViewModel.updateBrilloColor(nuevoBrillo)
+                                    colorsViewModel.updateBrilloColor(nuevoBrillo)
                                 },
 
                                 onFavoritoClick = { favorito ->
                                     favorito.color?.let { color ->
-                                        dinoViewModel.sendColorFinal(
+                                        colorsViewModel.sendColorFinal(
                                             (color.red * 255).toInt(),
                                             (color.green * 255).toInt(),
                                             (color.blue * 255).toInt()
                                         )
 
-                                        dinoViewModel.updateBrilloColor(
+                                        colorsViewModel.updateBrilloColor(
                                             favorito.brillo
                                         )
                                     }
                                 },
 
                                 onFavoritoLongClick = { index, color, brillo ->
-                                    dinoViewModel.saveOrClearFavorite(
+                                    colorsViewModel.saveOrClearFavorite(
                                         index,
                                         color,
                                         brillo
@@ -132,12 +146,12 @@ class MainActivity : ComponentActivity() {
                                 },
 
                                 onSendColor = { r, g, b ->
-                                    dinoViewModel.sendColorFinal(r, g, b)
+                                    colorsViewModel.sendColorFinal(r, g, b)
                                 },
 
                                 onReactivarColor = {
                                     if (!dinoViewModel.dinoEncendido) {
-                                        dinoViewModel.sendCurrentColor()
+                                        colorsViewModel.sendCurrentColor()
                                     }
                                 },
 

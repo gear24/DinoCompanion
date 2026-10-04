@@ -21,6 +21,7 @@ import com.example.dinocompanionapp.ui.components.DinoButton
 import com.example.dinocompanionapp.ui.components.DinoCard
 import com.example.dinocompanionapp.ui.components.DinoSlider
 import com.example.dinocompanionapp.ui.theme.*
+import com.example.dinocompanionapp.viewmodel.DinoColorsViewModel
 import com.example.dinocompanionapp.viewmodel.DinoViewModel
 
 
@@ -32,11 +33,11 @@ import com.example.dinocompanionapp.viewmodel.DinoViewModel
 fun ColorsScreen(
     currentColor: Color,
     brilloColor: Float,
-    favoritos: List<DinoViewModel.Favorito>,
+    favoritos: List<DinoColorsViewModel.Favorito>,
     onColorChangedInPicker: (Color) -> Unit,
     onColorStream: (Color) -> Unit,
     onBrilloChanged: (Float) -> Unit,
-    onFavoritoClick: (DinoViewModel.Favorito) -> Unit,
+    onFavoritoClick: (DinoColorsViewModel.Favorito) -> Unit,
     onFavoritoLongClick: (Int, Color, Float) -> Unit,
     onSendColor: (Int, Int, Int) -> Unit,
     onBackToHome: () -> Unit,
