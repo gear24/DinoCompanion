@@ -13,8 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.AndroidViewModel
 import com.example.dinocompanionapp.bluetooth.BluetoothManager
 import com.example.dinocompanionapp.data.BtState
 import com.example.dinocompanionapp.data.DinoInfo
@@ -104,10 +104,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     private val batteryManager = DinoBatteryManager(bluetoothManager)
 
     // --- ESTADOS DE HOME / GLOBAL ---
-
-
-
-
     var bateria by mutableIntStateOf(-1)
         private set
 
@@ -185,6 +181,8 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
     val musicManager = MusicManager()
     private val volumeManager = VolumeManager(appContext)
+
+
 
     init {
         bluetoothManager.updateDeviceName(dinoName)
@@ -368,9 +366,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
-
-
     fun updateBrilloColor(nuevoBrillo: Float) {
         val brillo = nuevoBrillo.coerceIn(0f, 100f)
         brilloColor = brillo
@@ -388,67 +383,32 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     fun sendCurrentColor() {
         dinoEncendido = true
         modoActual = 0
-
         repository.saveDinoEncendido(true)
         repository.saveModoActual(0)
-
-        enviarColorAlESP32(
-            currentColor,
-            persistir = true
-        )
-
-        sendBrightness(
-            brilloColor.toInt()
-        )
+        enviarColorAlESP32(currentColor, persistir = true)
+        sendBrightness(brilloColor.toInt())
     }
 
-
-    fun saveOrClearFavorite(
-        index: Int,
-        color: Color,
-        brillo: Float
-    ) {
+    fun saveOrClearFavorite(index: Int, color: Color, brillo: Float)
+    {
         if (index !in favoritos.indices) return
-
-        favoritos[index] = Favorito(
-            color = color,
-            brillo = brillo
-        )
-
-        repository.saveFavorito(
-            index = index,
-            color = color.toArgb(),
-            brillo = brillo
-        )
+        favoritos[index] = Favorito(color = color, brillo = brillo)
+        repository.saveFavorito(index = index, color = color.toArgb(), brillo = brillo)
     }
-
-
 
     fun sendBrightness(value: Int) {
         lightingManager.sendBrightness(value)
     }
-
 
     private fun enviarColorAlESP32(
         color: Color,
         persistir: Boolean = false
     ) {
         val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV(color.toArgb(), hsv)
 
-        android.graphics.Color.colorToHSV(
-            color.toArgb(),
-            hsv
-        )
-
-        Log.d(
-            "DINO_COLOR_DEBUG",
-            "📤 ENVIANDO AL ESP32 - H: ${hsv[0].toInt()}°, S: ${(hsv[1] * 100).toInt()}%, V: ${(hsv[2] * 100).toInt()}%"
-        )
-
-        Log.d(
-            "DINO_COLOR_DEBUG",
-            "📤 Color: ${color.toArgb().toString(16)}"
-        )
+        Log.d("DINO_COLOR_DEBUG","📤 ENVIANDO AL ESP32 - H: ${hsv[0].toInt()}°, S: ${(hsv[1] * 100).toInt()}%, V: ${(hsv[2] * 100).toInt()}%")
+        Log.d("DINO_COLOR_DEBUG","📤 Color: ${color.toArgb().toString(16)}")
 
         colorStreamChannel.trySend(color)
 
@@ -461,10 +421,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             repository.saveDinoEncendido(true)
             repository.saveModoActual(0)
 
-            Log.d(
-                "DINO_COLOR_DEBUG",
-                "💾 Color persistido en SharedPreferences"
-            )
+            Log.d("DINO_COLOR_DEBUG", "💾 Color persistido en SharedPreferences")
         }
     }
 
@@ -472,11 +429,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     // 🔥 Para el arrastre (streaming)
     fun streamColorLive(color: Color) {
         val hsv = FloatArray(3)
-
-        android.graphics.Color.colorToHSV(
-            color.toArgb(),
-            hsv
-        )
+        android.graphics.Color.colorToHSV(color.toArgb(), hsv)
 
         Log.d(
             "DINO_COLOR_DEBUG",
@@ -532,20 +485,19 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- ACCIONES DE ESCENAS ---
 
-    private var estadoPrevioModo: Int = 0
-    private var escenaPrevia: Escena? = null
 
     fun iniciarLiveScene(escenaEnEdicion: Escena? = null) {
-        estadoPrevioModo = modoActual
+        val ultimaEscena = if (ultimaEscenaId != -1L) {
+            listaEscenas.find { it.id == ultimaEscenaId }
+        } else {
+            null
+        }
 
-        escenaPrevia = escenaEnEdicion?.copy()
-            ?: if (ultimaEscenaId != -1L) {
-                listaEscenas
-                    .find { it.id == ultimaEscenaId }
-                    ?.copy()
-            } else {
-                null
-            }
+        sceneManager.iniciarLiveScene(
+            modoActual = modoActual,
+            escenaEnEdicion = escenaEnEdicion,
+            ultimaEscena = ultimaEscena
+        )
     }
 
     fun previewEscenaEnVivo(escenaTemporal: Escena) {
@@ -558,19 +510,21 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
     fun cancelarEdicionEscena() {
         viewModelScope.launch {
-            val previa = escenaPrevia
+            val previa = sceneManager.obtenerEscenaPrevia()
 
             if (previa != null) {
                 aplicarEscena(previa)
             } else {
-                if (estadoPrevioModo == 0) {
+                val modoPrevio = sceneManager.obtenerModoPrevio()
+
+                if (modoPrevio == 0) {
                     sendCurrentColor()
                 } else {
-                    modeManager.ejecutarModo(estadoPrevioModo)
+                    modeManager.ejecutarModo(modoPrevio)
                 }
             }
 
-            escenaPrevia = null
+            sceneManager.limpiarEstadoEdicion()
         }
     }
 
@@ -580,16 +534,15 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
     // Función para reactivar la última escena si entramos estando apagados
     fun reactivarUltimaEscena() {
-        if (ultimaEscenaId != -1L) {
-            val escenaEncontrada =
-                listaEscenas.find {
-                    it.id == ultimaEscenaId
-                }
-
-            escenaEncontrada?.let {
-                aplicarEscena(it)
-            }
+        val escena = if (ultimaEscenaId != -1L) {
+            listaEscenas.find { it.id == ultimaEscenaId }
+        } else {
+            null
         }
+        sceneManager.reactivarUltimaEscena(
+            ultimaEscenaId = ultimaEscenaId,
+            ultimaEscena = escena
+        )
     }
 
     fun guardarNuevaEscena(
@@ -601,13 +554,11 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         } else {
             repository.actualizarEscena( escena)
         }
-
         cargarEscenasLocales()
     }
 
     fun borrarEscena(id: Long) {
         repository.eliminarEscena( id)
-
         cargarEscenasLocales()
     }
 
@@ -628,13 +579,10 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     fun cambiarNombreDesdeUI(nombre: String) {
         viewModelScope.launch {
             changeDinoName(nombre)
-
             delay(500.milliseconds)
-
             restartDino()
             // Actualiza inmediatamente la app
             dinoName = nombre
-
             repository.saveDinoName(nombre)
         }
     }
@@ -648,7 +596,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun configurarMediaSession() {
-
         musicManager.onSongChanged = { media ->
             viewModelScope.launch {
                 val duracionReloj = media.duration.formatAsTime()
@@ -656,9 +603,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
                 val fuenteApp = media.packageName
 
                 bluetoothManager.send(
-                    DinoProtocol.MUSIC_SONG +
-                            "${media.title}|${media.artist}|$posicionReloj|$duracionReloj|$fuenteApp"
-                )
+                    DinoProtocol.MUSIC_SONG + "${media.title}|${media.artist}|$posicionReloj|$duracionReloj|$fuenteApp")
             }
         }
 
@@ -688,14 +633,12 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         mediaSessionManager.requestNotificationAccess()
     }
 
-
     private fun configurarVolumen() {
         volumeManager.onVolumeChanged = { volume ->
             Log.d("DINO_VOLUME_VM", "$volume%")
             viewModelScope.launch {
                 bluetoothManager.send(
-                    DinoProtocol.VOLUME + volume
-                )
+                    DinoProtocol.VOLUME + volume)
             }
         }
         volumeManager.start()

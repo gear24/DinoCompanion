@@ -16,7 +16,8 @@ class DinoSceneManager(
     private val onModoActualChanged: (Int) -> Unit,
     private val onUltimaEscenaChanged: (Long) -> Unit
 ) {
-
+    private var estadoPrevioModo: Int = 0
+    private var escenaPrevia: Escena? = null
     fun previewEscena(escena: Escena) {
         onDinoEncendidoChanged(true)
 
@@ -70,5 +71,33 @@ class DinoSceneManager(
         }
 
         return stringEscena.toString()
+    }
+
+    fun iniciarLiveScene(
+        modoActual: Int,
+        escenaEnEdicion: Escena?,
+        ultimaEscena: Escena?
+    ) {
+        estadoPrevioModo = modoActual
+
+        escenaPrevia = escenaEnEdicion?.copy()
+            ?: ultimaEscena?.copy()
+    }
+
+    fun obtenerEscenaPrevia(): Escena? = escenaPrevia
+
+    fun obtenerModoPrevio(): Int = estadoPrevioModo
+
+    fun limpiarEstadoEdicion() {
+        escenaPrevia = null
+    }
+
+    fun reactivarUltimaEscena(
+        ultimaEscenaId: Long,
+        ultimaEscena: Escena?
+    ) {
+        if (ultimaEscenaId != -1L && ultimaEscena != null) {
+            aplicarEscena(ultimaEscena)
+        }
     }
 }

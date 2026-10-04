@@ -44,8 +44,23 @@ fun SceneForm(
         mutableFloatStateOf(escenaAEditar?.brillo?.toFloat() ?: 50f)
     }
 
+    val velocidadesPorEfecto = remember(escenaAEditar) {
+        mutableStateMapOf<EfectoEscena, Float>().apply {
+            EfectoEscena.entries.forEach {
+                this[it] = 50f
+            }
+
+            if (escenaAEditar != null) {
+                this[escenaAEditar.efecto] =
+                    escenaAEditar.velocidad.toFloat()
+            }
+        }
+    }
+
     var velocidadEscena by remember(escenaAEditar) {
-        mutableFloatStateOf(escenaAEditar?.velocidad?.toFloat() ?: 50f)
+        mutableFloatStateOf(
+            escenaAEditar?.velocidad?.toFloat() ?: 50f
+        )
     }
 
     var efecto by remember(escenaAEditar) {
@@ -149,17 +164,22 @@ fun SceneForm(
                 Box(modifier = Modifier.weight(1f)) {
                     DinoButton(item.name) {
                         if (efecto != item) {
-                            efecto = item
-                            colorSeleccionado = 0 // Resetear siempre al primer color
 
-                            // 🟢 FIX: Obtener la paleta limpia para el nuevo efecto
+                            // Guardar el valor del modo actual
+                            velocidadesPorEfecto[efecto] = velocidadEscena
+
+                            // Cambiar de efecto
+                            efecto = item
+                            colorSeleccionado = 0
+
+                            // Recuperar el valor anterior de este efecto
+                            velocidadEscena = velocidadesPorEfecto[item] ?: 50f
+
                             val coloresNuevos = obtenerColoresPorDefecto(item)
 
-                            // Reemplazar el contenido completo de la lista para no dejar basura de otros modos
                             coloresEscena.clear()
                             coloresEscena.addAll(coloresNuevos)
 
-                            // Notificar inmediatamente la nueva estructura limpia al ESP32
                             notificarCambiosLive(forzar = true)
                         }
                     }
