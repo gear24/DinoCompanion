@@ -182,8 +182,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     val musicManager = MusicManager()
     private val volumeManager = VolumeManager(appContext)
 
-
-
     init {
         bluetoothManager.updateDeviceName(dinoName)
         configurarBluetooth()
@@ -194,9 +192,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         intentarAutoConexion()
         configurarVolumen()
         observarEstadoBluetooth()
-
     }
-
 
     @OptIn(FlowPreview::class)
     private fun iniciarProcesadorDeColores() {
@@ -213,7 +209,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
                 }
         }
     }
-
 
     /**
      * Llama a esto mientras ARRASTRAS el dedo en el ColorPicker.
@@ -465,8 +460,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
 
     // --- ACCIONES DE ESCENAS ---
-
-
     fun iniciarLiveScene(escenaEnEdicion: Escena? = null) {
         val ultimaEscena = if (ultimaEscenaId != -1L) {
             listaEscenas.find { it.id == ultimaEscenaId }
@@ -526,17 +519,13 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    fun guardarNuevaEscena(
-        escena: Escena,
-        esEdicion: Boolean
-    ) {
+    fun guardarNuevaEscena(escena: Escena, esEdicion: Boolean) {
         if (!esEdicion) {
             repository.agregarEscena(escena)
         } else {
             repository.actualizarEscena( escena)
         }
-        cargarEscenasLocales()
-    }
+        cargarEscenasLocales() }
 
     fun borrarEscena(id: Long) {
         repository.eliminarEscena( id)
