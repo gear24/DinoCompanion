@@ -57,11 +57,15 @@ class DinoColorsViewModel(
         val color: Color?,
         val brillo: Float
     )
-    var favoritoActivo by mutableStateOf<Int?>(null)
-        private set
-    var favoritoModificado by mutableStateOf(false)
+    var favoritoActivo by mutableStateOf(
+        repository.getFavoritoActivo()
+    )
         private set
 
+    var favoritoModificado by mutableStateOf(
+        repository.getFavoritoModificado()
+    )
+        private set
     val favoritos = mutableStateListOf<Favorito>().apply {
         addAll(
             List(5) { index ->
@@ -104,16 +108,26 @@ class DinoColorsViewModel(
 
     fun updateCurrentColor(nuevoColor: Color) {
         currentColor = nuevoColor
+
         favoritoActivo = null
         favoritoModificado = true
+
+        repository.saveFavoritoActivo(null)
+        repository.saveFavoritoModificado(true)
+
         repository.saveCurrentColor(nuevoColor.toArgb())
     }
 
 
     fun updateBrilloColor(nuevoBrillo: Float) {
         val brillo = nuevoBrillo.coerceIn(0f, 100f)
+
         favoritoActivo = null
         favoritoModificado = true
+
+        repository.saveFavoritoActivo(null)
+        repository.saveFavoritoModificado(true)
+
         brilloColor = brillo
         lightingManager.updateBrilloColor(brillo)
     }
@@ -182,6 +196,9 @@ class DinoColorsViewModel(
 
         favoritoActivo = index
         favoritoModificado = false
+
+        repository.saveFavoritoActivo(index)
+        repository.saveFavoritoModificado(false)
     }
     fun activarFavorito(index: Int) {
         if (index !in favoritos.indices) return
@@ -191,6 +208,9 @@ class DinoColorsViewModel(
         favorito.color?.let { color ->
             favoritoActivo = index
             favoritoModificado = false
+
+            repository.saveFavoritoActivo(index)
+            repository.saveFavoritoModificado(false)
 
             sendColorFinal(
                 (color.red * 255).toInt(),

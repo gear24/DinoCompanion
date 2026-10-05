@@ -248,7 +248,25 @@ class DinoRepository(context: Context) {
             "favorito_${index}_color",
             defaultColor
         )
+    fun getFavoritoActivo(): Int? {
+        val index = prefs.getInt("favorito_activo", -1)
+        return index.takeIf { it >= 0 }
+    }
 
+    fun saveFavoritoActivo(index: Int?) {
+        prefs.edit {
+            putInt("favorito_activo", index ?: -1)
+        }
+    }
+
+    fun getFavoritoModificado(): Boolean =
+        prefs.getBoolean("favorito_modificado", false)
+
+    fun saveFavoritoModificado(modificado: Boolean) {
+        prefs.edit {
+            putBoolean("favorito_modificado", modificado)
+        }
+    }
     fun getFavoritoBrillo(index: Int): Float =
         prefs.getFloat(
             "favorito_${index}_brillo",

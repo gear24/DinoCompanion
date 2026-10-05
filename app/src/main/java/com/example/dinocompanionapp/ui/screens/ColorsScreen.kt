@@ -78,7 +78,7 @@ fun ColorsScreen(
                         "Mantén presionado su recuadro para guardar los cambios.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 16.dp)
-                
+
             )
         }
 
