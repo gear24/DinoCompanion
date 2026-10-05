@@ -44,6 +44,7 @@ fun ColorsScreen(
     onBackToHome: () -> Unit,
     modifier: Modifier = Modifier,
     favoritoActivo: Int?,
+    favoritoModificado: Boolean,
     onReactivarColor: () -> Unit
 ) {
     LaunchedEffect(Unit) {
@@ -69,6 +70,17 @@ fun ColorsScreen(
         Spacer(Modifier.height(20.dp))
 
         Text("Brillo: ${brilloColor.toInt()}")
+        Spacer(Modifier.height(16.dp))
+
+        if (favoritoModificado) {
+            Text(
+                text = "💡 Has modificado este favorito. " +
+                        "Mantén presionado su recuadro para guardar los cambios.",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 16.dp)
+                
+            )
+        }
 
         DinoSlider(
             label = "Brillo",
@@ -90,11 +102,7 @@ fun ColorsScreen(
                     "un cuadro de color por unos segundos. ¡Disfruta tu nuevo color!"
         )
         Spacer(Modifier.height(1.dp))
-        Text(
-            text = "💡 Sugerencia: Si actualizas el brillo de un color guardado, vuelve a mantener presionado su respectivo cuadro para guardar el nuevo brillo.",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
+
 
         Spacer(Modifier.height(8.dp))
 

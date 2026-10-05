@@ -111,6 +111,7 @@ class MainActivity : ComponentActivity() {
                                 brilloColor = colorsViewModel.brilloColor,
                                 favoritos = colorsViewModel.favoritos,
                                 favoritoActivo = colorsViewModel.favoritoActivo,
+                                favoritoModificado = colorsViewModel.favoritoModificado,
 
                                 onColorChangedInPicker = { color ->
                                     colorsViewModel.updateCurrentColor(color)
