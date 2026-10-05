@@ -110,6 +110,7 @@ class MainActivity : ComponentActivity() {
                                 currentColor = colorsViewModel.currentColor,
                                 brilloColor = colorsViewModel.brilloColor,
                                 favoritos = colorsViewModel.favoritos,
+                                favoritoActivo = colorsViewModel.favoritoActivo,
 
                                 onColorChangedInPicker = { color ->
                                     colorsViewModel.updateCurrentColor(color)
@@ -124,16 +125,10 @@ class MainActivity : ComponentActivity() {
                                 },
 
                                 onFavoritoClick = { favorito ->
-                                    favorito.color?.let { color ->
-                                        colorsViewModel.sendColorFinal(
-                                            (color.red * 255).toInt(),
-                                            (color.green * 255).toInt(),
-                                            (color.blue * 255).toInt()
-                                        )
+                                    val index = colorsViewModel.favoritos.indexOf(favorito)
 
-                                        colorsViewModel.updateBrilloColor(
-                                            favorito.brillo
-                                        )
+                                    if (index != -1) {
+                                        colorsViewModel.activarFavorito(index)
                                     }
                                 },
 

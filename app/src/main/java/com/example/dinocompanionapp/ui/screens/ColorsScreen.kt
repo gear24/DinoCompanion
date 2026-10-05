@@ -2,6 +2,7 @@ package com.example.dinocompanionapp.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -42,6 +43,7 @@ fun ColorsScreen(
     onSendColor: (Int, Int, Int) -> Unit,
     onBackToHome: () -> Unit,
     modifier: Modifier = Modifier,
+    favoritoActivo: Int?,
     onReactivarColor: () -> Unit
 ) {
     LaunchedEffect(Unit) {
@@ -108,6 +110,11 @@ fun ColorsScreen(
                         .background(
                             favorito.color
                                 ?: Color.Gray.copy(alpha = 0.3f)
+                        )
+                        .border(
+                            width = 3.dp,
+                            color = if (favoritoActivo == index) Cream else Color.Transparent,
+                            shape = RoundedCornerShape(12.dp)
                         )
                         .combinedClickable(
                             onClick = {

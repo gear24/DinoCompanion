@@ -346,14 +346,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
 
     // --- ACCIONES DE COLORES ---
-
-    fun updateCurrentColor(nuevoColor: Color) {
-        currentColor = nuevoColor
-        repository.saveCurrentColor(nuevoColor.toArgb())
-    }
-
-
-
     fun updateBrilloModo(
         idModo: Int,
         nuevoBrillo: Float
@@ -399,13 +391,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         sendBrightness(brilloColor.toInt())
     }
 
-    fun saveOrClearFavorite(index: Int, color: Color, brillo: Float)
-    {
-        if (index !in favoritos.indices) return
-        favoritos[index] = Favorito(color = color, brillo = brillo)
-        repository.saveFavorito(index = index, color = color.toArgb(), brillo = brillo)
-    }
-
     fun sendBrightness(value: Int) {
         lightingManager.sendBrightness(value)
     }
@@ -437,20 +422,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
 
     // 🔥 Para el arrastre (streaming)
-    fun streamColorLive(color: Color) {
-        val hsv = FloatArray(3)
-        android.graphics.Color.colorToHSV(color.toArgb(), hsv)
-
-        Log.d(
-            "DINO_COLOR_DEBUG",
-            "🔄 ARRASTRE - H: ${hsv[0].toInt()}°, S: ${(hsv[1] * 100).toInt()}%, V: ${(hsv[2] * 100).toInt()}%"
-        )
-
-        enviarColorAlESP32(
-            color,
-            persistir = false
-        )
-    }
     fun sendColorFinal(
         red: Int,
         green: Int,
