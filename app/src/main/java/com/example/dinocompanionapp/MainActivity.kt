@@ -58,6 +58,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dinocompanionapp.viewmodel.DinoColorsViewModel
 import com.example.dinocompanionapp.viewmodel.DinoColorsViewModelFactory
+import com.example.dinocompanionapp.viewmodel.DinoModesViewModel
+import com.example.dinocompanionapp.viewmodel.DinoModesViewModelFactory
 
 
 /*
@@ -84,6 +86,18 @@ class MainActivity : ComponentActivity() {
                     },
                     onModoActualChanged = { modo ->
                         dinoViewModel.actualizarModoActual(modo)
+                    }
+                )
+            )
+            val modesViewModel: DinoModesViewModel = viewModel(
+                factory = DinoModesViewModelFactory(
+                    application = application,
+                    modeManager = dinoViewModel.modeManager,
+                    getModoActual = {
+                        dinoViewModel.modoActual
+                    },
+                    onBrilloChanged = { brillo ->
+                        dinoViewModel.sendBrightness(brillo.toInt())
                     }
                 )
             )
@@ -163,48 +177,51 @@ class MainActivity : ComponentActivity() {
                             ModesScreen(
                                 animState = dinoViewModel.animState,
 
-                                brightness = dinoViewModel.brilloModo(
+                                brightness = modesViewModel.brilloModo(
                                     dinoViewModel.modoActual
                                 ),
 
                                 onBrightnessChanged = { nuevoBrillo ->
-                                    dinoViewModel.updateBrilloModo(
+                                    modesViewModel.updateBrilloModo(
                                         dinoViewModel.modoActual,
                                         nuevoBrillo
                                     )
                                 },
 
                                 onStartLava = {
-                                    dinoViewModel.startLava()
+                                    modesViewModel.startLava()
                                 },
 
                                 onStartArcoiris = {
-                                    dinoViewModel.startArcoiris()
+                                    modesViewModel.startArcoiris()
                                 },
 
                                 onStartRespirar = {
-                                    dinoViewModel.startRespirar()
+                                    modesViewModel.startRespirar()
                                 },
 
                                 onStartOcean = {
-                                    dinoViewModel.startOcean()
+                                    modesViewModel.startOcean()
                                 },
 
                                 onStartForest = {
-                                    dinoViewModel.startForest()
+                                    modesViewModel.startForest()
                                 },
 
                                 onStartParty = {
-                                    dinoViewModel.startParty()
+                                    modesViewModel.startParty()
                                 },
+
 
                                 onStopAnimation = {
                                     dinoViewModel.stopAnimation()
                                 },
-
+ 
                                 onReactivarModo = {
                                     if (!dinoViewModel.dinoEncendido) {
-                                        dinoViewModel.reactivarUltimoModo()
+                                        modesViewModel.reactivarUltimoModo(
+                                            dinoViewModel.ultimoModoId
+                                        )
                                     }
                                 },
 
@@ -453,16 +470,6 @@ class MainActivity : ComponentActivity() {
 
             DinoButton("⛔ Apagar") {
                 viewModel.turnOffDino()
-            }
-            DinoButton("Modo 10") {
-                viewModel.modo10()
-            }
-            DinoButton("Modo 11") {
-                viewModel.modo11()
-            }
-
-            DinoButton("Modo 12") {
-                viewModel.modo12()
             }
 
             if (mostrarNombreDialog) {

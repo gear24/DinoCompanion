@@ -28,6 +28,7 @@ import com.example.dinocompanionapp.managers.DinoBatteryManager
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
@@ -64,7 +65,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         repository = repository,
         scope = viewModelScope
     )
-    private val modeManager = DinoModeManager(
+     val modeManager = DinoModeManager(
         bluetoothManager = bluetoothManager,
         repository = repository,
         lightingManager = lightingManager,
@@ -128,7 +129,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     )
         private set
 
-    private val brillosModo = mutableStateMapOf<Int, Float>()
 
     var currentColor by mutableStateOf(
         Color(repository.getCurrentColor(Color.Red.toArgb()))
@@ -341,18 +341,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
 
     // --- ACCIONES DE COLORES ---
-    fun updateBrilloModo(
-        idModo: Int,
-        nuevoBrillo: Float
-    ) {
-        val brillo = nuevoBrillo.coerceIn(0f, 100f)
-        brillosModo[idModo] = brillo
-        repository.saveBrilloModo(idModo, brillo)
-        if (modoActual == idModo) {
-            sendBrightness(brillo.toInt())
-        }
-    }
-
     fun actualizarDinoEncendido(encendido: Boolean) {
         dinoEncendido = encendido
         repository.saveDinoEncendido(encendido)
@@ -368,14 +356,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         brilloColor = brillo
         lightingManager.updateBrilloColor(brillo)
     }
-
-
-    fun brilloModo(idModo: Int): Float {
-        return brillosModo.getOrPut(idModo) {
-            repository.getBrilloModo(idModo)
-        }
-    }
-
 
     fun sendCurrentColor() {
         dinoEncendido = true
@@ -441,18 +421,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- ACCIONES DE MODOS ---
-    fun startLava() = modeManager.ejecutarModo(3)
-    fun startArcoiris() = modeManager.ejecutarModo(4)
-    fun startRespirar() = modeManager.ejecutarModo(1)
-    fun startOcean() = modeManager.ejecutarModo(2)
-    fun startForest() = modeManager.ejecutarModo(5)
-    fun startParty() = modeManager.ejecutarModo(6)
-    fun modo10() = modeManager.ejecutarModo(10)
-    fun modo11() = modeManager.ejecutarModo(11)
-    fun modo12() = modeManager.ejecutarModo(12)
-    fun reactivarUltimoModo() {
-        modeManager.reactivarUltimoModo(ultimoModoId)
-    }
     fun stopAnimation() {
         animState = false
         turnOffDino()
