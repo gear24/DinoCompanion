@@ -22,7 +22,7 @@ import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.sample
-
+import android.util.Log
 class DinoColorsViewModel(
     application: Application,
     bluetoothManager: BluetoothManager,
@@ -152,8 +152,23 @@ class DinoColorsViewModel(
         green: Int,
         blue: Int
     ) {
+        val color = Color(red, green, blue)
+        val hsv = FloatArray(3)
+
+        android.graphics.Color.colorToHSV(
+            color.toArgb(),
+            hsv
+        )
+
+        Log.d(
+            "DINO_COLOR_DEBUG",
+            "✅ FINAL - H: ${hsv[0].toInt()}°, " +
+                    "S: ${(hsv[1] * 100).toInt()}%, " +
+                    "V: ${(hsv[2] * 100).toInt()}%"
+        )
+
         sendColor(
-            Color(red, green, blue),
+            color,
             persistir = true
         )
     }

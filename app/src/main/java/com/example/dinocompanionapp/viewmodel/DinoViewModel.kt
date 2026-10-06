@@ -7,7 +7,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -27,7 +26,6 @@ import com.example.dinocompanionapp.data.audio.VolumeManager
 import com.example.dinocompanionapp.managers.DinoBatteryManager
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.sample
@@ -134,34 +132,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         Color(repository.getCurrentColor(Color.Red.toArgb()))
     )
         private set
-
-    data class Favorito(
-        val color: Color?,
-        val brillo: Float
-    )
-
-    val favoritos = mutableStateListOf<Favorito>().apply {
-        addAll(
-            List(5) { index ->
-                if (repository.hasFavorito(index)) {
-                    Favorito(
-                        color = Color(
-                            repository.getFavoritoColor(
-                                index,
-                                Color.Transparent.toArgb()
-                            )
-                        ),
-                        brillo = repository.getFavoritoBrillo(index)
-                    )
-                } else {
-                    Favorito(
-                        color = null,
-                        brillo = 80f
-                    )
-                }
-            }
-        )
-    }
 
     // --- ESTADOS DE MODESSCREEN ---
 
@@ -351,12 +321,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         repository.saveModoActual(modo)
     }
 
-    fun updateBrilloColor(nuevoBrillo: Float) {
-        val brillo = nuevoBrillo.coerceIn(0f, 100f)
-        brilloColor = brillo
-        lightingManager.updateBrilloColor(brillo)
-    }
-
     fun sendCurrentColor() {
         dinoEncendido = true
         modoActual = 0
@@ -366,6 +330,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         sendBrightness(brilloColor.toInt())
     }
 
+    
     fun sendBrightness(value: Int) {
         lightingManager.sendBrightness(value)
     }
@@ -393,31 +358,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
             Log.d("DINO_COLOR_DEBUG", "💾 Color persistido en SharedPreferences")
         }
-    }
-
-
-    // 🔥 Para el arrastre (streaming)
-    fun sendColorFinal(
-        red: Int,
-        green: Int,
-        blue: Int
-    ) {
-        val color = Color(red, green, blue)
-        val hsv = FloatArray(3)
-
-        android.graphics.Color.colorToHSV(
-            color.toArgb(),
-            hsv
-        )
-        Log.d(
-            "DINO_COLOR_DEBUG",
-            "✅ FINAL - H: ${hsv[0].toInt()}°, S: ${(hsv[1] * 100).toInt()}%, V: ${(hsv[2] * 100).toInt()}%"
-        )
-
-        enviarColorAlESP32(
-            color,
-            persistir = true
-        )
     }
 
     // --- ACCIONES DE MODOS ---

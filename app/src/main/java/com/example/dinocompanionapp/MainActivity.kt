@@ -244,7 +244,7 @@ class MainActivity : ComponentActivity() {
                                 onActualizarEscena = { escenaEditada ->
                                     dinoViewModel.guardarNuevaEscena(escenaEditada, esEdicion = true)
                                 },
-                                onSendColorRGB = { r, g, b -> dinoViewModel.sendColorFinal(r, g, b) },
+                                onSendColorRGB = { r, g, b -> colorsViewModel.sendColorFinal(r, g, b) },
                                 onReactivarEscena = {
                                     if (!dinoViewModel.dinoEncendido) {
                                         dinoViewModel.reactivarUltimaEscena()
