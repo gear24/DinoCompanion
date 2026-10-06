@@ -44,12 +44,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     private val appContext = application.applicationContext
     private val repository = DinoRepository(appContext)
 
-
-    // 1. Canal con estrategia CONFLATED para los colores en movimiento
-    private val colorStreamChannel = Channel<Color>(Channel.CONFLATED)
-
-
-
     var ultimoModoId by mutableIntStateOf(
         repository.getUltimoModoId()
     )
@@ -120,19 +114,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     )
         private set
 
-    // --- ESTADOS DE COLORSSCREEN ---
-
-    var brilloColor by mutableFloatStateOf(
-        repository.getBrilloColor()
-    )
-        private set
-
-
-    var currentColor by mutableStateOf(
-        Color(repository.getCurrentColor(Color.Red.toArgb()))
-    )
-        private set
-
     // --- ESTADOS DE MODESSCREEN ---
 
     var animState by mutableStateOf(modoActual != 0)
@@ -158,26 +139,9 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         configurarBateria()
         configurarMediaSession()
         cargarEscenasLocales()
-        iniciarProcesadorDeColores()
         intentarAutoConexion()
         configurarVolumen()
         observarEstadoBluetooth()
-    }
-
-    @OptIn(FlowPreview::class)
-    private fun iniciarProcesadorDeColores() {
-        viewModelScope.launch {
-            colorStreamChannel
-                .consumeAsFlow()
-                .sample(60.milliseconds)
-                .collect { color ->
-                    val r = (color.red * 255).toInt()
-                    val g = (color.green * 255).toInt()
-                    val b = (color.blue * 255).toInt()
-
-                    bluetoothManager.send("$r,$g,$b")
-                }
-        }
     }
 
     /**
@@ -261,7 +225,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
                     if (dinoEncendido) {
                         when (modoActual) {
-                            0 -> sendCurrentColor()
+                            0 -> reactivarColorActual()
                             99 -> reactivarUltimaEscena()
                             else -> modeManager.ejecutarModo(modoActual)
                         }
@@ -321,45 +285,23 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         repository.saveModoActual(modo)
     }
 
-    fun sendCurrentColor() {
+    fun reactivarColorActual() {
+        val color = Color(
+            repository.getCurrentColor(Color.Red.toArgb())
+        )
+        val brillo = repository.getBrilloColor()
         dinoEncendido = true
         modoActual = 0
         repository.saveDinoEncendido(true)
         repository.saveModoActual(0)
-        enviarColorAlESP32(currentColor, persistir = true)
-        sendBrightness(brilloColor.toInt())
+        lightingManager.sendColor(color)
+        lightingManager.sendBrightness(brillo.toInt())
     }
-
     
     fun sendBrightness(value: Int) {
         lightingManager.sendBrightness(value)
     }
-
-    private fun enviarColorAlESP32(
-        color: Color,
-        persistir: Boolean = false
-    ) {
-        val hsv = FloatArray(3)
-        android.graphics.Color.colorToHSV(color.toArgb(), hsv)
-
-        Log.d("DINO_COLOR_DEBUG","📤 ENVIANDO AL ESP32 - H: ${hsv[0].toInt()}°, S: ${(hsv[1] * 100).toInt()}%, V: ${(hsv[2] * 100).toInt()}%")
-        Log.d("DINO_COLOR_DEBUG","📤 Color: ${color.toArgb().toString(16)}")
-
-        colorStreamChannel.trySend(color)
-
-        if (persistir) {
-            currentColor = color
-            dinoEncendido = true
-            modoActual = 0
-
-            repository.saveCurrentColor(color.toArgb())
-            repository.saveDinoEncendido(true)
-            repository.saveModoActual(0)
-
-            Log.d("DINO_COLOR_DEBUG", "💾 Color persistido en SharedPreferences")
-        }
-    }
-
+    
     // --- ACCIONES DE MODOS ---
     fun stopAnimation() {
         animState = false
@@ -400,7 +342,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
                 val modoPrevio = sceneManager.obtenerModoPrevio()
 
                 if (modoPrevio == 0) {
-                    sendCurrentColor()
+                    reactivarColorActual()
                 } else {
                     modeManager.ejecutarModo(modoPrevio)
                 }
