@@ -60,6 +60,8 @@ import com.example.dinocompanionapp.viewmodel.DinoColorsViewModel
 import com.example.dinocompanionapp.viewmodel.DinoColorsViewModelFactory
 import com.example.dinocompanionapp.viewmodel.DinoModesViewModel
 import com.example.dinocompanionapp.viewmodel.DinoModesViewModelFactory
+import com.example.dinocompanionapp.viewmodel.DinoScenesViewModel
+import com.example.dinocompanionapp.viewmodel.DinoScenesViewModelFactory
 
 
 /*
@@ -101,6 +103,24 @@ class MainActivity : ComponentActivity() {
                     }
                 )
             )
+            val scenesViewModel: DinoScenesViewModel = viewModel(
+                factory = DinoScenesViewModelFactory(
+                    application = application,
+                    sceneManager = dinoViewModel.sceneManager,
+                    getModoActual = { dinoViewModel.modoActual },
+                    getUltimaEscenaId = { dinoViewModel.ultimaEscenaId },
+                    onRestoreColor = {
+                        dinoViewModel.reactivarColorActual()
+                    },
+
+                    onRestoreMode = { modo ->
+                        dinoViewModel.modeManager.ejecutarModo(modo)
+
+                    }
+                )
+            )
+
+
             DinoCompanionAppTheme {
                 var pantalla by remember { mutableStateOf("home") }
 
@@ -234,20 +254,25 @@ class MainActivity : ComponentActivity() {
                         }
                         "scenes" -> {
                             ScenesScreen(
-                                listaEscenas = dinoViewModel.listaEscenas,
-                                viewModel = dinoViewModel,
-                                onAplicarEscena = { escena -> dinoViewModel.aplicarEscena(escena) },
-                                onBorrarEscena = { id -> dinoViewModel.borrarEscena(id) },
+                                listaEscenas = scenesViewModel.listaEscenas,
+                                dinoEncendido = dinoViewModel.dinoEncendido,
+                                viewModel = scenesViewModel,
+                                onAplicarEscena = { escena ->
+                                    scenesViewModel.aplicarEscena(escena) },
+                                onBorrarEscena = { id ->
+                                    scenesViewModel.borrarEscena(id) },
                                 onGuardarNuevaEscena = { nuevaEscena ->
-                                    dinoViewModel.guardarNuevaEscena(nuevaEscena, esEdicion = false)
-                                },
+                                    scenesViewModel.guardarNuevaEscena(
+                                        nuevaEscena,
+                                        esEdicion = false) },
                                 onActualizarEscena = { escenaEditada ->
-                                    dinoViewModel.guardarNuevaEscena(escenaEditada, esEdicion = true)
-                                },
+                                    scenesViewModel.guardarNuevaEscena(
+                                        escenaEditada,
+                                        esEdicion = true) },
                                 onSendColorRGB = { r, g, b -> colorsViewModel.sendColorFinal(r, g, b) },
                                 onReactivarEscena = {
                                     if (!dinoViewModel.dinoEncendido) {
-                                        dinoViewModel.reactivarUltimaEscena()
+                                        scenesViewModel.reactivarUltimaEscena()
                                     }
                                 },
                                 onBackToHome = { pantalla = "home" },

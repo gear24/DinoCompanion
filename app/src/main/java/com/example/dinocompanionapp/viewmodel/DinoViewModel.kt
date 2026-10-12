@@ -3,10 +3,8 @@ package com.example.dinocompanionapp.viewmodel
 import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -18,17 +16,12 @@ import com.example.dinocompanionapp.bluetooth.BluetoothManager
 import com.example.dinocompanionapp.data.BtState
 import com.example.dinocompanionapp.data.DinoInfo
 import com.example.dinocompanionapp.data.DinoProtocol
-import com.example.dinocompanionapp.data.Escena
 import com.example.dinocompanionapp.data.audio.MediaSessionManager
 import com.example.dinocompanionapp.data.audio.MediaState
 import com.example.dinocompanionapp.data.audio.MusicManager
 import com.example.dinocompanionapp.data.audio.VolumeManager
 import com.example.dinocompanionapp.managers.DinoBatteryManager
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 import com.example.dinocompanionapp.managers.DinoLightingManager
@@ -37,7 +30,35 @@ import com.example.dinocompanionapp.managers.DinoSceneManager
 //
 import com.example.dinocompanionapp.repository.DinoRepository
 import kotlinx.coroutines.flow.distinctUntilChanged
-
+/**
+ *
+ * 📌 MÉTODOS EN DinoColorsViewModel (Módulo de UI/Colors):
+ *
+ * 1. streamColorLive(color)
+ *    - Uso: ColorPicker / Sliders (mientras el usuario ARRASTRA el dedo).
+ *    - Qué hace: Envía el color a 'colorStreamChannel' (con throttle/sample de 60ms).
+ *    - Persistencia: NO guarda en SharedPreferences ni altera el estado permanente.
+ *
+ * 2. sendColorFinal(r, g, b) [o sendColor(color, persistir = true)]
+ *    - Uso: Al SOLTAR el slider, seleccionar un Preset o activar un Favorito.
+ *    - Qué hace: Pasa el color al canal, guarda el color en 'repository', activa
+ *      dinoEncendido = true y fuerza el modoActual = 0 (Estático).
+ *    - Persistencia: SÍ guarda permanentemente en SharedPreferences.
+ *
+ * 3. sendCurrentColor()
+ *    - Uso: Reaplicar el color guardado manualmente activando estados de encendido.
+ *    - Qué hace: Sincroniza 'dinoEncendido' y 'modoActual' en repositorios, y manda
+ *      el color actual + brillo por el stream.
+ *
+ * -----------------------------------------------------------------------------
+ * 📌 MÉTODOS EN DinoLightingManager (Módulo Directo/Hardware):
+ *
+ * 4. lightingManager.sendColor(color)
+ *    - Uso: Usado internamente por el 'colorStreamChannel' y respuestas a eventos
+ *      del firmware (ej: reactivarColorActual).
+ *    - Qué hace: Transforma a RGB "$r,$g,$b" y lo envía INMEDIATAMENTE por Bluetooth.
+ *    - Persistencia: NO altera SharedPreferences ni pasa por colas de retardo.
+ */
 
 class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -67,7 +88,7 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         onDinoEncendidoChanged = { dinoEncendido = it },
         onAnimStateChanged = { animState = it }
     )
-    private val sceneManager = DinoSceneManager(
+     val sceneManager = DinoSceneManager(
         bluetoothManager = bluetoothManager,
         scope = viewModelScope,
         onDinoEncendidoChanged = { dinoEncendido = it },
@@ -119,10 +140,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     var animState by mutableStateOf(modoActual != 0)
         private set
 
-    // --- ESTADOS DE ESCENAS CREACIÓN / LISTA ---
-
-    val listaEscenas = mutableStateListOf<Escena>()
-
     // --Estados para el manejo del audio
     var mediaState by mutableStateOf(MediaState())
         private set
@@ -138,7 +155,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         configurarBluetooth()
         configurarBateria()
         configurarMediaSession()
-        cargarEscenasLocales()
         intentarAutoConexion()
         configurarVolumen()
         observarEstadoBluetooth()
@@ -194,15 +210,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
                 }
         }
     }
-
-
-    fun cargarEscenasLocales() {
-        listaEscenas.clear()
-        listaEscenas.addAll(
-            repository.cargarTodasLasEscenas()
-        )
-    }
-
 
     private fun procesarMensaje(mensaje: String) {
 
@@ -310,76 +317,20 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
 
     // --- ACCIONES DE ESCENAS ---
-    fun iniciarLiveScene(escenaEnEdicion: Escena? = null) {
-        val ultimaEscena = if (ultimaEscenaId != -1L) {
-            listaEscenas.find { it.id == ultimaEscenaId }
-        } else {
-            null
-        }
-
-        sceneManager.iniciarLiveScene(
-            modoActual = modoActual,
-            escenaEnEdicion = escenaEnEdicion,
-            ultimaEscena = ultimaEscena
-        )
-    }
-
-    fun previewEscenaEnVivo(escenaTemporal: Escena) {
-        sceneManager.previewEscena(escenaTemporal)
-    }
-
-    fun previewBrilloEscena(brillo: Int) {
-        sceneManager.previewBrillo(brillo)
-    }
-
-    fun cancelarEdicionEscena() {
-        viewModelScope.launch {
-            val previa = sceneManager.obtenerEscenaPrevia()
-
-            if (previa != null) {
-                aplicarEscena(previa)
-            } else {
-                val modoPrevio = sceneManager.obtenerModoPrevio()
-
-                if (modoPrevio == 0) {
-                    reactivarColorActual()
-                } else {
-                    modeManager.ejecutarModo(modoPrevio)
-                }
-            }
-
-            sceneManager.limpiarEstadoEdicion()
-        }
-    }
-
-    fun aplicarEscena(escena: Escena) {
-        sceneManager.aplicarEscena(escena)
-    }
 
     // Función para reactivar la última escena si entramos estando apagados
     fun reactivarUltimaEscena() {
         val escena = if (ultimaEscenaId != -1L) {
-            listaEscenas.find { it.id == ultimaEscenaId }
+            repository.cargarTodasLasEscenas()
+                .find { it.id == ultimaEscenaId }
         } else {
             null
         }
+
         sceneManager.reactivarUltimaEscena(
             ultimaEscenaId = ultimaEscenaId,
             ultimaEscena = escena
         )
-    }
-
-    fun guardarNuevaEscena(escena: Escena, esEdicion: Boolean) {
-        if (!esEdicion) {
-            repository.agregarEscena(escena)
-        } else {
-            repository.actualizarEscena( escena)
-        }
-        cargarEscenasLocales() }
-
-    fun borrarEscena(id: Long) {
-        repository.eliminarEscena( id)
-        cargarEscenasLocales()
     }
 
 

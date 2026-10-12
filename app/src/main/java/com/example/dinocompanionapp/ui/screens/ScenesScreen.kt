@@ -1,5 +1,6 @@
 package com.example.dinocompanionapp.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,13 +27,13 @@ import com.example.dinocompanionapp.ui.components.SceneForm
 import com.example.dinocompanionapp.ui.theme.Dark
 import com.example.dinocompanionapp.ui.theme.Pink
 import com.example.dinocompanionapp.ui.theme.SoftPink
-import com.example.dinocompanionapp.viewmodel.DinoViewModel
+import com.example.dinocompanionapp.viewmodel.DinoScenesViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ScenesScreen(
     listaEscenas: List<Escena>,
-    viewModel: DinoViewModel,
+    viewModel: DinoScenesViewModel,
     onAplicarEscena: (Escena) -> Unit,
     onBorrarEscena: (Long) -> Unit,
     onGuardarNuevaEscena: (Escena) -> Unit,
@@ -40,12 +41,19 @@ fun ScenesScreen(
     onSendColorRGB: (Int, Int, Int) -> Unit,
     onBackToHome: () -> Unit,
     onReactivarEscena: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    dinoEncendido: Boolean,
 ) {
     // 🟢 Si entra a escenas y está apagado, aplica la última escena
 // 🟢 Solo reactivar si la lámpara estaba en estado apagado
     LaunchedEffect(Unit) {
-        if (!viewModel.dinoEncendido) {
+        Log.d(
+            "DINO_SCENE_DEBUG",
+            "Abriendo pantalla | dinoEncendido=$dinoEncendido"
+        )
+
+        if (!dinoEncendido) {
+            Log.d("DINO_SCENE_DEBUG", "Reactivando última escena")
             onReactivarEscena()
         }
     }
@@ -191,6 +199,11 @@ fun ScenesScreen(
                     onSendColor = { r, g, b ->
                         onSendColorRGB(r, g, b)
                     },
+                    onCancelarEdicion = {
+                        viewModel.cancelarEdicionEscena { escenaPrevia ->
+                            viewModel.aplicarEscena(escenaPrevia)
+                        }
+                    },
                     onCancelar = { mostrandoFormulario = false },
                     onGuardar = { escenaConstruida ->
                         if (escenaSeleccionadaParaEditar == null) {
@@ -204,4 +217,6 @@ fun ScenesScreen(
             }
         }
     }
+
+
 }

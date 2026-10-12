@@ -23,18 +23,18 @@ import com.example.dinocompanionapp.ui.theme.Cream
 import com.example.dinocompanionapp.ui.theme.Dark
 import com.example.dinocompanionapp.viewmodel.DinoViewModel
 import androidx.compose.runtime.mutableFloatStateOf
-
-
+import com.example.dinocompanionapp.viewmodel.DinoScenesViewModel
 
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SceneForm(
     escenaAEditar: Escena? = null,
-    viewModel: DinoViewModel,
+    viewModel: DinoScenesViewModel,
     onSendColor: (Int, Int, Int) -> Unit,
     onGuardar: (Escena) -> Unit,
-    onCancelar: () -> Unit
+    onCancelar: () -> Unit,
+    onCancelarEdicion: () -> Unit,
 ) {
     var nombre by remember(escenaAEditar) {
         mutableStateOf(escenaAEditar?.nombre ?: "")
@@ -299,7 +299,7 @@ fun SceneForm(
         ) {
             Box(modifier = Modifier.weight(1f)) {
                 DinoButton("Cancelar") {
-                    viewModel.cancelarEdicionEscena()
+                    onCancelarEdicion()
                     onCancelar()
                 }
             }

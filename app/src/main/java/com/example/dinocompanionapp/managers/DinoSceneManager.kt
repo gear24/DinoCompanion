@@ -1,5 +1,6 @@
 package com.example.dinocompanionapp.managers
 
+import android.util.Log
 import androidx.compose.ui.graphics.Color
 import com.example.dinocompanionapp.bluetooth.BluetoothManager
 import com.example.dinocompanionapp.data.DinoProtocol
@@ -78,6 +79,12 @@ class DinoSceneManager(
         escenaEnEdicion: Escena?,
         ultimaEscena: Escena?
     ) {
+        Log.d(
+            "DINO_SCENE_DEBUG",
+            "Iniciando editor | modoActual=$modoActual | " +
+                    "escenaEnEdicion=${escenaEnEdicion?.nombre} | " +
+                    "ultimaEscena=${ultimaEscena?.nombre}"
+        )
         estadoPrevioModo = modoActual
 
         escenaPrevia = escenaEnEdicion?.copy()

@@ -1,6 +1,7 @@
 package com.example.dinocompanionapp.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.core.content.edit
 import com.example.dinocompanionapp.data.Escena
 import com.example.dinocompanionapp.data.EfectoEscena
@@ -60,6 +61,10 @@ class DinoRepository(context: Context) {
         prefs.edit {
             putLong("ultima_escena_id", id)
         }
+        Log.d(
+            "DINO_SCENE_DEBUG",
+            "Guardado=$id | Leído=${getUltimaEscenaId()}"
+        )
     }
 
     // --- ESCENAS ---
