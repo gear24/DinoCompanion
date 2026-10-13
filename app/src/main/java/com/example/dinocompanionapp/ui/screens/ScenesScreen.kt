@@ -211,8 +211,28 @@ fun ScenesScreen(
                         } else {
                             onActualizarEscena(escenaConstruida)
                         }
+
+                        // Restaurar el estado propio del Creador de escenas.
+                        viewModel.cancelarEdicionEscena { escenaPrevia ->
+                            viewModel.aplicarEscena(escenaPrevia)
+                        }
+
                         mostrandoFormulario = false
-                    }
+                    },
+
+                    onGuardarYAplicar = { escenaConstruida ->
+                        if (escenaSeleccionadaParaEditar == null) {
+                            onGuardarNuevaEscena(escenaConstruida)
+                        } else {
+                            onActualizarEscena(escenaConstruida)
+                        }
+
+                        // La escena nueva/editada pasa a ser la aplicada.
+                        onAplicarEscena(escenaConstruida)
+                        viewModel.limpiarEstadoEdicion()
+
+                        mostrandoFormulario = false
+                    },
                 )
             }
         }

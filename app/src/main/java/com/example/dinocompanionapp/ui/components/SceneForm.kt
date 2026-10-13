@@ -32,9 +32,10 @@ fun SceneForm(
     escenaAEditar: Escena? = null,
     viewModel: DinoScenesViewModel,
     onSendColor: (Int, Int, Int) -> Unit,
-    onGuardar: (Escena) -> Unit,
-    onCancelar: () -> Unit,
     onCancelarEdicion: () -> Unit,
+    onGuardar: (Escena) -> Unit,
+    onGuardarYAplicar: (Escena) -> Unit,
+    onCancelar: () -> Unit,
 ) {
     var nombre by remember(escenaAEditar) {
         mutableStateOf(escenaAEditar?.nombre ?: "")
@@ -293,16 +294,19 @@ fun SceneForm(
 
         Spacer(Modifier.height(24.dp))
 
+        Spacer(Modifier.height(24.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(modifier = Modifier.weight(1f)) {
-                DinoButton("Cancelar") {
+                DinoButton("⚠ Cancelar") {
                     onCancelarEdicion()
                     onCancelar()
                 }
             }
+
             Box(modifier = Modifier.weight(1f)) {
                 DinoButton("💾 Guardar") {
                     if (nombre.isNotBlank()) {
@@ -317,6 +321,22 @@ fun SceneForm(
                         onGuardar(escenaFinal)
                     }
                 }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        DinoButton("💾 Guardar y aplicar") {
+            if (nombre.isNotBlank()) {
+                val escenaFinal = Escena(
+                    id = escenaAEditar?.id ?: System.currentTimeMillis(),
+                    nombre = nombre,
+                    efecto = efecto,
+                    colores = coloresEscena.take(cantidadColores),
+                    brillo = brilloEscena.toInt(),
+                    velocidad = velocidadEscena.toInt()
+                )
+                onGuardarYAplicar(escenaFinal)
             }
         }
     }

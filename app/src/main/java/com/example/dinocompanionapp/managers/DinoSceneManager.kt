@@ -87,8 +87,9 @@ class DinoSceneManager(
         )
         estadoPrevioModo = modoActual
 
-        escenaPrevia = escenaEnEdicion?.copy()
-            ?: ultimaEscena?.copy()
+        /*escenaPrevia = escenaEnEdicion?.copy() ?: ultimaEscena?.copy() */
+        
+        escenaPrevia = ultimaEscena?.copy()
     }
 
     fun obtenerEscenaPrevia(): Escena? = escenaPrevia
