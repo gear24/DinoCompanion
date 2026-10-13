@@ -6,11 +6,9 @@ import androidx.compose.material3.*
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.example.dinocompanionapp.ui.theme.DinoCompanionAppTheme
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Alignment
@@ -21,7 +19,6 @@ import androidx.compose.foundation.background
 import android.bluetooth.BluetoothAdapter
 
 import android.content.Intent
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.rememberScrollState
@@ -34,14 +31,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import com.example.dinocompanionapp.bluetooth.BluetoothManager
 import com.example.dinocompanionapp.data.BtState
-import com.example.dinocompanionapp.data.DinoProtocol
 import kotlinx.coroutines.launch
 
-import com.example.dinocompanionapp.ui.screens.*
 import com.example.dinocompanionapp.ui.components.*
 import androidx.activity.viewModels
 import androidx.compose.ui.text.style.TextAlign
-import androidx.lifecycle.lifecycleScope
 import com.example.dinocompanionapp.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import com.example.dinocompanionapp.viewmodel.DinoViewModel
@@ -55,13 +49,7 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.dinocompanionapp.viewmodel.DinoColorsViewModel
-import com.example.dinocompanionapp.viewmodel.DinoColorsViewModelFactory
-import com.example.dinocompanionapp.viewmodel.DinoModesViewModel
-import com.example.dinocompanionapp.viewmodel.DinoModesViewModelFactory
-import com.example.dinocompanionapp.viewmodel.DinoScenesViewModel
-import com.example.dinocompanionapp.viewmodel.DinoScenesViewModelFactory
+
 
 
 /*
@@ -77,213 +65,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
         setContent {
-            val colorsViewModel: DinoColorsViewModel = viewModel(
-                factory = DinoColorsViewModelFactory(
-                    application = application,
-                    bluetoothManager = dinoViewModel.bluetoothManager,
-                    onDinoEncendidoChanged = { encendido ->
-                        dinoViewModel.actualizarDinoEncendido(encendido)
-                    },
-                    onModoActualChanged = { modo ->
-                        dinoViewModel.actualizarModoActual(modo)
-                    }
-                )
+            DinoCompanionApp(
+                application = application,
+                dinoViewModel = dinoViewModel
             )
-            val modesViewModel: DinoModesViewModel = viewModel(
-                factory = DinoModesViewModelFactory(
-                    application = application,
-                    modeManager = dinoViewModel.modeManager,
-                    getModoActual = {
-                        dinoViewModel.modoActual
-                    },
-                    onBrilloChanged = { brillo ->
-                        dinoViewModel.sendBrightness(brillo.toInt())
-                    }
-                )
-            )
-            val scenesViewModel: DinoScenesViewModel = viewModel(
-                factory = DinoScenesViewModelFactory(
-                    application = application,
-                    sceneManager = dinoViewModel.sceneManager,
-                    getModoActual = { dinoViewModel.modoActual },
-                    getUltimaEscenaId = { dinoViewModel.ultimaEscenaId },
-                    onRestoreColor = {
-                        dinoViewModel.reactivarColorActual()
-                    },
-
-                    onRestoreMode = { modo ->
-                        dinoViewModel.modeManager.ejecutarModo(modo)
-
-                    }
-                )
-            )
-
-
-            DinoCompanionAppTheme {
-                var pantalla by remember { mutableStateOf("home") }
-
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    val modifierConPadding = Modifier.padding(innerPadding)
-
-                    when (pantalla) {
-                        "home" -> {
-                            HomeScreen(
-                                viewModel = dinoViewModel,
-                                bluetoothManager = dinoViewModel.bluetoothManager,
-                                onNavigateToColors = { pantalla = "colors" },
-                                onNavigateToModes = { pantalla = "modes" },
-                                onNavigateToScenes = { pantalla = "scenes" },
-                                modifier = modifierConPadding
-                            )
-                        }
-
-                        "colors" -> {
-                            ColorsScreen(
-                                currentColor = colorsViewModel.currentColor,
-                                brilloColor = colorsViewModel.brilloColor,
-                                favoritos = colorsViewModel.favoritos,
-                                favoritoActivo = colorsViewModel.favoritoActivo,
-                                favoritoModificado = colorsViewModel.favoritoModificado,
-
-                                onColorChangedInPicker = { color ->
-                                    colorsViewModel.updateCurrentColor(color)
-                                },
-
-                                onColorStream = { color ->
-                                    colorsViewModel.streamColorLive(color)
-                                },
-
-                                onBrilloChanged = { nuevoBrillo ->
-                                    colorsViewModel.updateBrilloColor(nuevoBrillo)
-                                },
-
-                                onFavoritoClick = { favorito ->
-                                    val index = colorsViewModel.favoritos.indexOf(favorito)
-
-                                    if (index != -1) {
-                                        colorsViewModel.activarFavorito(index)
-                                    }
-                                },
-
-                                onFavoritoLongClick = { index, color, brillo ->
-                                    colorsViewModel.saveOrClearFavorite(
-                                        index,
-                                        color,
-                                        brillo
-                                    )
-                                },
-
-                                onSendColor = { r, g, b ->
-                                    colorsViewModel.sendColorFinal(r, g, b)
-                                },
-
-                                onReactivarColor = {
-                                    if (!dinoViewModel.dinoEncendido) {
-                                        colorsViewModel.sendCurrentColor()
-                                    }
-                                },
-
-                                onBackToHome = {
-                                    pantalla = "home"
-                                },
-
-                                modifier = modifierConPadding
-                            )
-                        }
-
-                        "modes" -> {
-                            ModesScreen(
-                                animState = dinoViewModel.animState,
-
-                                brightness = modesViewModel.brilloModo(
-                                    dinoViewModel.modoActual
-                                ),
-
-                                onBrightnessChanged = { nuevoBrillo ->
-                                    modesViewModel.updateBrilloModo(
-                                        dinoViewModel.modoActual,
-                                        nuevoBrillo
-                                    )
-                                },
-
-                                onStartLava = {
-                                    modesViewModel.startLava()
-                                },
-
-                                onStartArcoiris = {
-                                    modesViewModel.startArcoiris()
-                                },
-
-                                onStartRespirar = {
-                                    modesViewModel.startRespirar()
-                                },
-
-                                onStartOcean = {
-                                    modesViewModel.startOcean()
-                                },
-
-                                onStartForest = {
-                                    modesViewModel.startForest()
-                                },
-
-                                onStartParty = {
-                                    modesViewModel.startParty()
-                                },
-
-
-                                onStopAnimation = {
-                                    dinoViewModel.stopAnimation()
-                                },
- 
-                                onReactivarModo = {
-                                    if (!dinoViewModel.dinoEncendido) {
-                                        modesViewModel.reactivarUltimoModo(
-                                            dinoViewModel.ultimoModoId
-                                        )
-                                    }
-                                },
-
-                                onBackToHome = {
-                                    pantalla = "home"
-                                },
-
-                                modifier = modifierConPadding
-                            )
-                        }
-                        "scenes" -> {
-                            ScenesScreen(
-                                listaEscenas = scenesViewModel.listaEscenas,
-                                dinoEncendido = dinoViewModel.dinoEncendido,
-                                viewModel = scenesViewModel,
-                                onAplicarEscena = { escena ->
-                                    scenesViewModel.aplicarEscena(escena) },
-                                onBorrarEscena = { id ->
-                                    scenesViewModel.borrarEscena(id) },
-                                onGuardarNuevaEscena = { nuevaEscena ->
-                                    scenesViewModel.guardarNuevaEscena(
-                                        nuevaEscena,
-                                        esEdicion = false) },
-                                onActualizarEscena = { escenaEditada ->
-                                    scenesViewModel.guardarNuevaEscena(
-                                        escenaEditada,
-                                        esEdicion = true) },
-                                onSendColorRGB = { r, g, b -> colorsViewModel.sendColorFinal(r, g, b) },
-                                onReactivarEscena = {
-                                    if (!dinoViewModel.dinoEncendido) {
-                                        scenesViewModel.reactivarUltimaEscena()
-                                    }
-                                },
-                                onBackToHome = { pantalla = "home" },
-                                modifier = modifierConPadding
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
+}
 
     @Composable
     fun HomeScreen(
@@ -294,14 +83,11 @@ class MainActivity : ComponentActivity() {
         onNavigateToScenes: () -> Unit,
         modifier: Modifier = Modifier
     ) {
-        // 🔴 BORRADO: var bateria por remember { mutableIntStateOf(-1) }
-        // 🔴 BORRADO: LaunchedEffect(bluetoothManager) { ... } con procesarMensaje local
-        // 🔴 BORRADO: fun procesarMensaje(...)
 
         var mensaje by remember { mutableStateOf("") }
         val scope = rememberCoroutineScope()
         var audioPermission by remember {
-            mutableStateOf(dinoViewModel.hasAudioPermission())
+            mutableStateOf(viewModel.hasAudioPermission())
         }
 
         val bluetoothPermissionLauncher = rememberLauncherForActivityResult(
@@ -319,7 +105,7 @@ class MainActivity : ComponentActivity() {
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
-                    audioPermission = dinoViewModel.hasAudioPermission()
+                    audioPermission = viewModel.hasAudioPermission()
                     val powerManager =
                         context.getSystemService(Context.POWER_SERVICE) as PowerManager
 
@@ -337,7 +123,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val media = dinoViewModel.mediaState
+        val media = viewModel.mediaState
         var mostrarNombreDialog by remember { mutableStateOf(false) }
         var nuevoNombre by remember { mutableStateOf("") }
 
@@ -360,7 +146,7 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(Unit) {
             bluetoothManager.checkBluetoothStatus()
 
-            if (!dinoViewModel.hasBtPermission()) {
+            if (!viewModel.hasBtPermission()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     bluetoothPermissionLauncher.launch(
                         arrayOf(
@@ -437,7 +223,7 @@ class MainActivity : ComponentActivity() {
 
             if (!audioPermission) {
                 DinoButton("🎵 Activar música") {
-                    dinoViewModel.requestAudioPermission()
+                    viewModel.requestAudioPermission()
                 }
             } else {
                 DinoCard {
@@ -534,4 +320,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
+

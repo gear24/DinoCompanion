@@ -88,7 +88,7 @@ class DinoSceneManager(
         estadoPrevioModo = modoActual
 
         /*escenaPrevia = escenaEnEdicion?.copy() ?: ultimaEscena?.copy() */
-        
+
         escenaPrevia = ultimaEscena?.copy()
     }
 
