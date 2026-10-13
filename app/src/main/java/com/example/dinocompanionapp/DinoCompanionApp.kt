@@ -24,10 +24,6 @@ import com.example.dinocompanionapp.viewmodel.DinoScenesViewModelFactory
 import com.example.dinocompanionapp.viewmodel.DinoViewModel
 import android.app.Application
 
-
-
-
-
 @Composable
 fun DinoCompanionApp(
     application: Application,
