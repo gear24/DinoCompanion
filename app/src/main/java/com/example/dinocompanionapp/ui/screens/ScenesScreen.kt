@@ -29,6 +29,9 @@ import com.example.dinocompanionapp.ui.theme.Pink
 import com.example.dinocompanionapp.ui.theme.SoftPink
 import com.example.dinocompanionapp.viewmodel.DinoScenesViewModel
 
+
+
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ScenesScreen(

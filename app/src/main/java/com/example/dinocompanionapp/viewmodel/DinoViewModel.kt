@@ -150,13 +150,35 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
     val musicManager = MusicManager()
     private val volumeManager = VolumeManager(appContext)
 
+    // --- ESTADO PANZA (global) ---
+    fun setPanza(enabled: Boolean) {
+        panzaOn = enabled
+        repository.savePanzaOn(enabled)
+        viewModelScope.launch {
+            bluetoothManager.send(
+                if (enabled) DinoProtocol.PANZA_ON else DinoProtocol.PANZA_OFF
+            )
+        }
+    }
+
+    // --- ESTADO DE FIESTA / PANZA ---
+
+    var fiestaStyle by mutableIntStateOf(repository.getFiestaStyle())
+        private set
+
+    var autoFiesta by mutableStateOf(repository.getAutoFiesta())
+        private set
+
+    var panzaOn by mutableStateOf(repository.getPanzaOn())
+        private set
+
     init {
         bluetoothManager.updateDeviceName(dinoName)
         configurarBluetooth()
         configurarBateria()
         configurarMediaSession()
         intentarAutoConexion()
-        configurarVolumen()
+//        configurarVolumen()
         observarEstadoBluetooth()
     }
 
@@ -220,6 +242,38 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
             batteryManager.processMessage(mensaje)
             return
         }
+        // PANZA|0 / PANZA|1  → broadcast de estado
+        // PANZA|ON / PANZA|OFF / PANZA|TOGGLE → eco de comando, ignorar
+        if (mensaje.startsWith(DinoProtocol.PANZA_RESPONSE)) {
+            val payload = mensaje.removePrefix(DinoProtocol.PANZA_RESPONSE).trim()
+            when (payload) {
+                "0" -> { panzaOn = false; repository.savePanzaOn(false) }
+                "1" -> { panzaOn = true;  repository.savePanzaOn(true)  }
+                else -> { /* ON / OFF / TOGGLE → eco, ignorar */ }
+            }
+            return
+        }
+        // PANZA|0 / PANZA|1  → broadcast de estado del firmware
+// PANZA|ON / |OFF / |TOGGLE → eco de comandos; ignorar
+        if (mensaje.startsWith(DinoProtocol.PANZA_RESPONSE)) {
+            val payload = mensaje
+                .removePrefix(DinoProtocol.PANZA_RESPONSE)
+                .trim()
+            when (payload) {
+                "0" -> {
+                    panzaOn = false
+                    repository.savePanzaOn(false)
+                }
+                "1" -> {
+                    panzaOn = true
+                    repository.savePanzaOn(true)
+                }
+                else -> {
+                    // ON / OFF / TOGGLE → eco del propio comando, no hacer nada
+                }
+            }
+            return
+        }
 
         when {
             mensaje.contains("HELLO") ||
@@ -229,14 +283,6 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
 
                 viewModelScope.launch {
                     bluetoothManager.send(DinoProtocol.BATTERY)
-
-                    if (dinoEncendido) {
-                        when (modoActual) {
-                            0 -> reactivarColorActual()
-                            99 -> reactivarUltimaEscena()
-                            else -> modeManager.ejecutarModo(modoActual)
-                        }
-                    }
                 }
             }
 
@@ -314,6 +360,38 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         animState = false
         turnOffDino()
     }
+    // --- ACCIONES DE FIESTA / PANZA ---
+
+    fun actualizarFiestaStyle(style: Int) {
+        if (style !in 0..2) return
+        fiestaStyle = style
+        repository.saveFiestaStyle(style)
+        viewModelScope.launch {
+            bluetoothManager.send(DinoProtocol.FIESTASTYLE + style)
+        }
+    }
+
+    fun actualizarAutoFiesta(enabled: Boolean) {
+        autoFiesta = enabled
+        repository.saveAutoFiesta(enabled)
+        viewModelScope.launch {
+            bluetoothManager.send(
+                DinoProtocol.AUTOFIESTA + if (enabled) "1" else "0"
+            )
+        }
+    }
+
+    fun actualizarPanza(enabled: Boolean) {
+        panzaOn = enabled
+        repository.savePanzaOn(enabled)
+        viewModelScope.launch {
+            bluetoothManager.send(
+                if (enabled) DinoProtocol.PANZA_ON else DinoProtocol.PANZA_OFF
+            )
+        }
+    }
+
+
 
 
     // --- ACCIONES DE ESCENAS ---
@@ -415,3 +493,10 @@ class DinoViewModel(application: Application) : AndroidViewModel(application) {
         volumeManager.start()
     }
 }
+
+
+
+
+
+
+

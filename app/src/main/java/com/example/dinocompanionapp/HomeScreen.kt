@@ -58,6 +58,7 @@ fun HomeScreen(
     onNavigateToColors: () -> Unit,
     onNavigateToModes: () -> Unit,
     onNavigateToScenes: () -> Unit,
+    onNavigateToParty: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -197,6 +198,7 @@ fun HomeScreen(
         DinoButton("Colores Favoritos") { onNavigateToColors() }
         DinoButton("💡 Modos de Luz") { onNavigateToModes() }
         DinoButton("Creador de Escenas") { onNavigateToScenes() }
+        DinoButton("🎉 Estilos de Fiesta") { onNavigateToParty() }
 
         if (!audioPermission) {
             DinoButton("🎵 Activar música") {

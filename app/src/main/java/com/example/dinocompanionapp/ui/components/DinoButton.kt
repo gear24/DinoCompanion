@@ -14,31 +14,16 @@ import com.example.dinocompanionapp.ui.theme.Dark
 fun DinoButton(
     texto: String,
     modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
     onClick: () -> Unit
 ) {
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Beige,
-            contentColor = Dark
+            containerColor = if (isSelected) Dark else Beige,
+            contentColor  = if (isSelected) Beige else Dark
         ),
         modifier = modifier
-    ) {
-        Text(texto)
-    }
-}
-
-@Composable
-fun DinoSmallButton(
-    texto: String,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Beige,
-            contentColor = Dark
-        )
     ) {
         Text(texto)
     }

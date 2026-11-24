@@ -9,6 +9,8 @@ import com.example.dinocompanionapp.viewmodel.DinoColorsViewModel
 import com.example.dinocompanionapp.viewmodel.DinoModesViewModel
 import com.example.dinocompanionapp.viewmodel.DinoScenesViewModel
 import com.example.dinocompanionapp.viewmodel.DinoViewModel
+import com.example.dinocompanionapp.ui.screens.PartyStylesScreen
+
 
 @Composable
 fun AppNavigation(
@@ -29,6 +31,7 @@ fun AppNavigation(
                 onNavigateToColors = { onNavigate("colors") },
                 onNavigateToModes = { onNavigate("modes") },
                 onNavigateToScenes = { onNavigate("scenes") },
+                onNavigateToParty = { onNavigate("party") },
                 modifier = modifier
             )
         }
@@ -141,5 +144,19 @@ fun AppNavigation(
                 modifier = modifier
             )
         }
+
+        "party" -> {
+            PartyStylesScreen(
+                fiestaStyle = dinoViewModel.fiestaStyle,
+                autoFiesta = dinoViewModel.autoFiesta,
+                panzaOn = dinoViewModel.panzaOn,
+                onFiestaStyleChange = { dinoViewModel.actualizarFiestaStyle(it) },
+                onAutoFiestaChange = { dinoViewModel.actualizarAutoFiesta(it) },
+                onPanzaChange = { dinoViewModel.actualizarPanza(it) },
+                onBackToHome = { onNavigate("home") },
+                modifier = modifier
+            )
+        }
+
     }
 }

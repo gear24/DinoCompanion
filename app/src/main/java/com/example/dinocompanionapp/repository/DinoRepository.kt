@@ -289,5 +289,34 @@ class DinoRepository(context: Context) {
         }
     }
 
+    // --- FIESTA / PANZA ---
+
+    fun getFiestaStyle(): Int =
+        prefs.getInt("fiesta_style", 1)   // 1 = Beat Flash por default
+
+    fun saveFiestaStyle(style: Int) {
+        prefs.edit {
+            putInt("fiesta_style", style)
+        }
+    }
+
+    fun getAutoFiesta(): Boolean =
+        prefs.getBoolean("auto_fiesta", true)
+
+    fun saveAutoFiesta(enabled: Boolean) {
+        prefs.edit {
+            putBoolean("auto_fiesta", enabled)
+        }
+    }
+
+    fun getPanzaOn(): Boolean =
+        prefs.getBoolean("panza_on", false)
+
+    fun savePanzaOn(enabled: Boolean) {
+        prefs.edit {
+            putBoolean("panza_on", enabled)
+        }
+    }
+
 
 }
